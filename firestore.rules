@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Permitir leer i escriure a la col·lecció 'videos' a tothom (Demo/Test Mode)
+    match /videos/{video} {
+      allow read, write: if true;
+    }
+  }
+}
