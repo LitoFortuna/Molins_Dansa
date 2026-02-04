@@ -356,8 +356,8 @@ const HomeView = ({ onNavigate }) => (
   <div className="space-y-12 animate-in fade-in duration-500">
     <section className="relative bg-gradient-to-br from-rose-900 via-rose-700 to-orange-500 text-white rounded-3xl overflow-hidden shadow-2xl p-8 md:p-16 text-center">
       <div className="relative z-10 max-w-3xl mx-auto">
-        <span className="bg-white/20 backdrop-blur-sm px-4 py-1 rounded-full text-sm font-medium border border-white/30">2a Edició • 2026</span>
-        <h1 className="text-4xl md:text-6xl font-black mb-6 mt-4">MOLINS DANSA</h1>
+        <span className="bg-white/20 backdrop-blur-sm px-4 py-1 rounded-full text-sm font-medium border border-white/30">2a Edició</span>
+        <h1 className="text-4xl md:text-6xl font-black mb-6 mt-4">MOLINS DANSA 2026</h1>
         <p className="text-lg md:text-xl mb-8 text-rose-100">Mostra el teu talent ballant a qualsevol racó de la nostra vila.</p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button onClick={() => onNavigate('upload')} className="px-8 py-3"><Camera size={20} />Participar</Button>
