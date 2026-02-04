@@ -85,7 +85,7 @@ const Button = ({ children, onClick, variant = 'primary', className = '', disabl
   return <button type={type} onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className}`}>{children}</button>;
 };
 
-const Card = ({ children, className = '' }) => <div className={`bg-white rounded-xl shadow-md overflow-hidden ${className}`}>{children}</div>;
+const Card = ({ children, className = '', ...props }) => <div className={`bg-white rounded-xl shadow-md overflow-hidden ${className}`} {...props}>{children}</div>;
 const Badge = ({ children, color = 'bg-gray-100 text-gray-800' }) => <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${color}`}>{children}</span>;
 
 // --- COMPONENT: VIDEO PLAYER ---
@@ -347,7 +347,7 @@ const SchoolsView = ({ onBack }) => (
     <div className="mt-12 bg-rose-900 text-white rounded-2xl p-8 text-center">
       <h3 className="text-2xl font-bold mb-4">Tens una escola de dansa?</h3>
       <p className="mb-6 opacity-90">Si vols col·laborar amb Molins Dansa 2026, posa't en contacte amb nosaltres.</p>
-      <Button variant="secondary" className="mx-auto">Contactar Organització</Button>
+      <Button variant="secondary" className="mx-auto" onClick={() => window.location.href = 'mailto:associaciods@gmail.com'}>Contactar Organització</Button>
     </div>
   </div>
 );
