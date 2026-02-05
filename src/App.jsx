@@ -617,7 +617,8 @@ const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, onDelete,
 
 // --- LEAFLET MAP IMPORTS ---
 import 'leaflet/dist/leaflet.css';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 
 // Fix Leaflet default icon issue
@@ -668,6 +669,27 @@ const GeocodedMarker = ({ location, title, author, url }) => {
   );
 };
 
+const LocationButton = () => {
+  const map = useMap();
+
+  const handleLocate = () => {
+    map.locate().on("locationfound", function (e) {
+      map.flyTo(e.latlng, 16);
+      L.circle(e.latlng, { radius: e.accuracy / 2, color: 'blue', fillColor: '#3b82f6', fillOpacity: 0.2 }).addTo(map);
+      L.marker(e.latlng).addTo(map).bindPopup("Ets aquí!").openPopup();
+    });
+  };
+
+  return (
+    <button
+      onClick={handleLocate}
+      className="absolute top-4 right-4 z-[1000] bg-white text-gray-700 p-2 rounded-lg shadow-md hover:bg-gray-50 focus:outline-none border border-gray-200 font-bold text-xs flex items-center gap-2"
+    >
+      <MapPin size={16} className="text-rose-600" /> On soc?
+    </button>
+  );
+};
+
 const MapView = ({ onBack, videos = [] }) => {
   // Coordenadas centrales de Molins de Rei
   const MOLINS_COORDS = [41.408, 2.015];
@@ -691,15 +713,18 @@ const MapView = ({ onBack, videos = [] }) => {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {videos.map(video => (
-              <GeocodedMarker
-                key={video.id}
-                location={video.location}
-                title={video.title}
-                author={video.author}
-                url={video.url}
-              />
-            ))}
+            <LocationButton />
+            <MarkerClusterGroup chunkedLoading>
+              {videos.map(video => (
+                <GeocodedMarker
+                  key={video.id}
+                  location={video.location}
+                  title={video.title}
+                  author={video.author}
+                  url={video.url}
+                />
+              ))}
+            </MarkerClusterGroup>
           </MapContainer>
         </div>
       </Card>
