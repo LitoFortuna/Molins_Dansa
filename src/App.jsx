@@ -911,7 +911,7 @@ export default function App() {
         {currentView === 'gallery' && <GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onShare={handleShare} user={user} onNavigate={navigateTo} />}
         {currentView === 'map' && <MapView onBack={() => navigateTo('home')} videos={videos} />}
         {currentView === 'prizes' && <PrizesView onBack={() => navigateTo('home')} />}
-        {currentView === 'bases' && <BasesView onBack={() => navigateTo('home')} />}
+        {currentView === 'bases' && <BasesView onBack={() => navigateTo('home')} onNavigate={navigateTo} />}
         {currentView === 'privacy' && <PrivacyView onBack={() => navigateTo('home')} />}
         {currentView === 'schools' && <SchoolsView onBack={() => navigateTo('home')} />}
       </main>
