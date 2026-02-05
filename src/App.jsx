@@ -615,25 +615,97 @@ const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, onDelete,
   );
 };
 
-const MapView = ({ onBack }) => (
-  <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto h-[80vh] flex flex-col">
-    <button onClick={onBack} className="text-sm text-gray-500 hover:text-rose-600 mb-4 flex items-center gap-1">← Tornar</button>
-    <Card className="flex-grow overflow-hidden flex flex-col shadow-xl">
-      <div className="p-4 border-b border-gray-100 flex items-center gap-2 bg-white">
-        <MapPin className="text-rose-600" />
-        <h2 className="font-bold text-lg">Mapa de Localitzacions 2026</h2>
-      </div>
-      <iframe
-        src="https://www.google.com/maps/d/embed?mid=1LWzaMyLhAxNp8aSLo24QmWUQ1qWzr3Y"
-        width="100%"
-        height="100%"
-        className="flex-grow border-0"
-        allowFullScreen
-        title="Mapa Molins Dansa"
-      ></iframe>
-    </Card>
-  </div>
-);
+// --- LEAFLET MAP IMPORTS ---
+import 'leaflet/dist/leaflet.css';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+
+// Fix Leaflet default icon issue
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+let DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
+
+// --- COMPONENT: GEOCODED MARKER ---
+const GeocodedMarker = ({ location, title, author, url }) => {
+  const [position, setPosition] = useState(null);
+
+  useEffect(() => {
+    const geocode = async () => {
+      try {
+        // Añadimos "Molins de Rei" para asegurar que busca en la ciudad correcta
+        const query = encodeURIComponent(`${location}, Molins de Rei, Spain`);
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`);
+        const data = await response.json();
+        if (data && data.length > 0) {
+          setPosition([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
+        }
+      } catch (err) {
+        console.error("Error geocoding:", location, err);
+      }
+    };
+    if (location) geocode();
+  }, [location]);
+
+  if (!position) return null;
+
+  return (
+    <Marker position={position}>
+      <Popup>
+        <div className="text-center">
+          <strong className="block text-rose-600 mb-1">{title}</strong>
+          <span className="text-xs text-gray-500">{author}</span>
+          <br />
+          <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold underline mt-1 block">Veure Vídeo</a>
+        </div>
+      </Popup>
+    </Marker>
+  );
+};
+
+const MapView = ({ onBack, videos = [] }) => {
+  // Coordenadas centrales de Molins de Rei
+  const MOLINS_COORDS = [41.408, 2.015];
+
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto h-[80vh] flex flex-col">
+      <button onClick={onBack} className="text-sm text-gray-500 hover:text-rose-600 mb-4 flex items-center gap-1">← Tornar</button>
+      <Card className="flex-grow overflow-hidden flex flex-col shadow-xl border-0">
+        <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white z-10 relative shadow-sm">
+          <div className="flex items-center gap-2">
+            <MapPin className="text-rose-600" />
+            <h2 className="font-bold text-lg">Mapa en Temps Real 2026</h2>
+          </div>
+          <span className="text-xs bg-rose-100 text-rose-800 px-2 py-1 rounded-full font-medium">
+            {videos.length} ubicacions
+          </span>
+        </div>
+        <div className="flex-grow relative z-0">
+          <MapContainer center={MOLINS_COORDS} zoom={15} scrollWheelZoom={true} style={{ height: "100%", width: "100%" }}>
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            {videos.map(video => (
+              <GeocodedMarker
+                key={video.id}
+                location={video.location}
+                title={video.title}
+                author={video.author}
+                url={video.url}
+              />
+            ))}
+          </MapContainer>
+        </div>
+      </Card>
+    </div>
+  );
+};
 
 const PrizesView = ({ onBack }) => (
   <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto">
@@ -812,7 +884,7 @@ export default function App() {
         {currentView === 'upload' && <UploadView onUploadSuccess={handleUploadSuccess} onCancel={() => navigateTo('home')} user={user} />}
         {currentView === 'success' && <div className="text-center py-20"><div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle size={48} /></div><h2 className="text-4xl font-bold mb-4">Rebut!</h2><div className="flex justify-center gap-4"><Button onClick={() => navigateTo('gallery')}>Galeria</Button></div></div>}
         {currentView === 'gallery' && <GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onShare={handleShare} user={user} onNavigate={navigateTo} />}
-        {currentView === 'map' && <MapView onBack={() => navigateTo('home')} />}
+        {currentView === 'map' && <MapView onBack={() => navigateTo('home')} videos={videos} />}
         {currentView === 'prizes' && <PrizesView onBack={() => navigateTo('home')} />}
         {currentView === 'bases' && <BasesView onBack={() => navigateTo('home')} />}
         {currentView === 'privacy' && <PrivacyView onBack={() => navigateTo('home')} />}
