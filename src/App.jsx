@@ -788,6 +788,64 @@ const PrizesView = ({ onBack }) => (
   </div>
 );
 
+const BasesView = ({ onBack, onNavigate }) => (
+  <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto">
+    <button onClick={onBack} className="text-sm text-gray-500 hover:text-rose-600 mb-6 flex items-center gap-1">← Tornar</button>
+    <Card className="p-8">
+      <h2 className="text-3xl font-bold mb-6">Bases del Concurs</h2>
+      <div className="prose prose-rose max-w-none text-gray-700 space-y-4">
+        <p><strong>1. Participació:</strong> Obert a tothom sense límit d'edat. Els menors necessiten autorització.</p>
+        <p><strong>2. Temàtica:</strong> Dansa en espais públics de Molins de Rei.</p>
+        <p><strong>3. Format:</strong> Vídeos horitzontals de màxim 2 minuts.</p>
+
+        <div className="bg-rose-50 border border-rose-100 p-4 rounded-xl my-6">
+          <h3 className="font-bold text-rose-800 mb-2">Premis i Categories</h3>
+          <p className="mb-4 text-sm">Hi ha diferents categories i premis valorats en més de 300€,</p>
+          <Button variant="primary" onClick={() => onNavigate('prizes')} className="text-sm w-full md:w-auto">
+            <Trophy size={16} /> Consultar tots els Premis
+          </Button>
+        </div>
+
+        <p><strong>4. Dates:</strong> Submissió de vídeos fins al 30 de Maig de 2026.</p>
+        <p><strong>5. Drets d'imatge:</strong> Els participants cedeixen els drets per a la difusió en xarxes socials de l'Ajuntament.</p>
+      </div>
+    </Card>
+  </div>
+);
+
+const PrivacyView = ({ onBack }) => (
+  <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto">
+    <button onClick={onBack} className="text-sm text-gray-500 hover:text-rose-600 mb-6 flex items-center gap-1">← Tornar</button>
+    <Card className="p-8">
+      <h2 className="text-3xl font-bold mb-6 flex items-center gap-2"><Lock className="text-rose-600" /> Política de Privacitat</h2>
+      <p className="mb-4">D'acord amb el RGPD, us informem que les vostres dades seran tractades per l'Associació Dance Space exclusivament per a la gestió del concurs.</p>
+      <ul className="list-disc pl-5 space-y-2 mb-4">
+        <li>No compartirem el vostre email amb tercers.</li>
+        <li>Podeu exercir els vostres drets d'accés, rectificació i cancel·lació enviant un email.</li>
+        <li>Les dades de localització només s'usen per al mapa interactiu.</li>
+      </ul>
+    </Card>
+  </div>
+);
+
+const SchoolsView = ({ onBack }) => (
+  <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto">
+    <button onClick={onBack} className="text-sm text-gray-500 hover:text-rose-600 mb-6 flex items-center gap-1">← Tornar</button>
+    <div className="grid md:grid-cols-2 gap-6">
+      <Card className="p-6 text-center hover:shadow-xl transition-all">
+        <School size={48} className="mx-auto text-rose-500 mb-4" />
+        <h3 className="text-xl font-bold mb-2">Escola Municipal de Dansa</h3>
+        <p className="text-gray-500">Fomentant la dansa des de 1990.</p>
+      </Card>
+      <Card className="p-6 text-center hover:shadow-xl transition-all">
+        <Building2 size={48} className="mx-auto text-amber-500 mb-4" />
+        <h3 className="text-xl font-bold mb-2">Estudi 15</h3>
+        <p className="text-gray-500">Dansa urbana i contemporània.</p>
+      </Card>
+    </div>
+  </div>
+);
+
 // --- APP ---
 export default function App() {
   const [currentView, setCurrentView] = useState('home');
