@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Camera, Heart, MapPin, Play, Trophy, Users, Calendar, Upload, CheckCircle, Link as LinkIcon, Edit, Trash2, Shield, FileText, Lock, School, LogIn, UserPlus, LogOut, Phone, Mail, User, RefreshCw, Share2, Building2, Store, Search, Filter, Download, ExternalLink, LayoutGrid, X, Star, Menu } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
@@ -625,19 +626,49 @@ const SchoolsView = ({ onBack }) => (
 );
 
 // --- APP ---
+// Noms de vista (que fan servir les vistes via onNavigate) → rutes reals.
+const VIEW_PATHS = {
+  home: '/', gallery: '/galeria', map: '/mapa', auth: '/identificacio',
+  upload: '/participa', success: '/enviat', prizes: '/premis',
+  bases: '/bases', privacy: '/privacitat', schools: '/escoles',
+};
+
+// Torna a dalt en cada canvi de ruta.
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [pathname]);
+  return null;
+}
+
+// Protegeix /participa: cal sessió no anònima (auth.currentUser és sempre actual).
+function RequireAuth({ children }) {
+  if (auth.currentUser && !auth.currentUser.isAnonymous) return children;
+  return <Navigate to="/identificacio" replace />;
+}
+
+// Passa l'id de la ruta /video/:id al render.
+function RouteWithVideoId({ render }) {
+  const { id } = useParams();
+  return render(id);
+}
+
 export default function App() {
-  // Deep-link: si s'obre amb #v=<id>, arrencar directament a la galeria.
-  const [currentView, setCurrentView] = useState(() => /[#&]v=[\w-]+/.test(window.location.hash) ? 'gallery' : 'home');
+  return (
+    <BrowserRouter>
+      <ScrollToTop />
+      <Main />
+    </BrowserRouter>
+  );
+}
+
+function Main() {
+  const navigate = useNavigate();
   const [videos, setVideos] = useState([]);
   const [notification, setNotification] = useState(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [highlightId, setHighlightId] = useState(() => {
-    const m = window.location.hash.match(/[#&]v=([\w-]+)/);
-    return m ? m[1] : null;
-  });
 
   useEffect(() => {
     const initAuth = async () => {
@@ -684,7 +715,7 @@ export default function App() {
     }
   };
 
-  const handleUploadSuccess = () => setCurrentView('success');
+  const handleUploadSuccess = () => navigate('/enviat');
 
   // --- LOGICA DE VOT DUAL ---
   const handleVote = async (id) => {
@@ -706,7 +737,7 @@ export default function App() {
   };
 
   const handleShare = async (video) => {
-    const url = `${window.location.origin}${window.location.pathname}#v=${video.id}`;
+    const url = `${window.location.origin}/video/${video.id}`;
     const shareData = { title: video.title, text: `Vota ${video.title} a Molins Dansa!`, url };
     if (navigator.share) { try { await navigator.share(shareData); } catch { /* compartir cancel·lat per l'usuari */ } }
     else { navigator.clipboard.writeText(`${shareData.text} ${url}`); setNotification("Enllaç copiat!"); setTimeout(() => setNotification(null), 3000); }
@@ -723,12 +754,14 @@ export default function App() {
   };
   const navigateTo = (view) => {
     setMobileMenuOpen(false);
-    setHighlightId(null);
-    if (window.location.hash) window.history.replaceState(null, '', window.location.pathname + window.location.search);
-    if (view === 'upload' && (!user || user.isAnonymous)) { setNotification("Registra't primer"); setTimeout(() => setNotification(null), 3000); setCurrentView('auth'); }
-    else { setCurrentView(view); } window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (view === 'upload' && (!user || user.isAnonymous)) {
+      setNotification("Registra't primer"); setTimeout(() => setNotification(null), 3000);
+      navigate(VIEW_PATHS.auth);
+      return;
+    }
+    navigate(VIEW_PATHS[view] || '/');
   };
-  const handleLogout = async () => { setMobileMenuOpen(false); await signOut(auth); setNotification("Adéu!"); setCurrentView('home'); setTimeout(() => setNotification(null), 3000); await signInAnonymously(auth); };
+  const handleLogout = async () => { setMobileMenuOpen(false); await signOut(auth); setNotification("Adéu!"); navigate('/'); setTimeout(() => setNotification(null), 3000); await signInAnonymously(auth); };
 
 
   return (
@@ -795,20 +828,20 @@ export default function App() {
 
       <main className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12 flex-grow w-full">
         {notification && <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 z-50"><CheckCircle className="text-green-400" size={20} />{notification}</div>}
-        {currentView === 'home' && <HomeView onNavigate={navigateTo} />}
-        {currentView === 'auth' && <AuthView onLoginSuccess={() => navigateTo('upload')} onCancel={() => navigateTo('home')} />}
-        {currentView === 'upload' && <UploadView onUploadSuccess={handleUploadSuccess} onCancel={() => navigateTo('home')} user={user} />}
-        {currentView === 'success' && <div className="text-center py-20"><div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle size={48} /></div><h2 className="text-4xl font-bold mb-4">Rebut!</h2><div className="flex justify-center gap-4"><Button onClick={() => navigateTo('gallery')}>Galeria</Button></div></div>}
-        {currentView === 'gallery' && <GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={highlightId} />}
-        {currentView === 'map' && (
-          <Suspense fallback={<div className="text-center py-20 text-gray-400">Carregant mapa…</div>}>
-            <MapView onBack={() => navigateTo('home')} videos={videos} />
-          </Suspense>
-        )}
-        {currentView === 'prizes' && <PrizesView onBack={() => navigateTo('home')} />}
-        {currentView === 'bases' && <BasesView onBack={() => navigateTo('home')} onNavigate={navigateTo} />}
-        {currentView === 'privacy' && <PrivacyView onBack={() => navigateTo('home')} />}
-        {currentView === 'schools' && <SchoolsView onBack={() => navigateTo('home')} />}
+        <Routes>
+          <Route path="/" element={<HomeView onNavigate={navigateTo} />} />
+          <Route path="/galeria" element={<GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={null} />} />
+          <Route path="/video/:id" element={<RouteWithVideoId render={(id) => <GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={id} />} />} />
+          <Route path="/mapa" element={<Suspense fallback={<div className="text-center py-20 text-gray-400">Carregant mapa…</div>}><MapView onBack={() => navigateTo('home')} videos={videos} /></Suspense>} />
+          <Route path="/identificacio" element={<AuthView onLoginSuccess={() => navigate('/participa')} onCancel={() => navigateTo('home')} />} />
+          <Route path="/participa" element={<RequireAuth><UploadView onUploadSuccess={handleUploadSuccess} onCancel={() => navigateTo('home')} user={user} /></RequireAuth>} />
+          <Route path="/enviat" element={<div className="text-center py-20"><div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle size={48} /></div><h2 className="text-4xl font-bold mb-4">Rebut!</h2><div className="flex justify-center gap-4"><Button onClick={() => navigateTo('gallery')}>Galeria</Button></div></div>} />
+          <Route path="/premis" element={<PrizesView onBack={() => navigateTo('home')} />} />
+          <Route path="/bases" element={<BasesView onBack={() => navigateTo('home')} onNavigate={navigateTo} />} />
+          <Route path="/privacitat" element={<PrivacyView onBack={() => navigateTo('home')} />} />
+          <Route path="/escoles" element={<SchoolsView onBack={() => navigateTo('home')} />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
 
       <footer className="bg-gray-900 text-gray-400 py-12 mt-12">
