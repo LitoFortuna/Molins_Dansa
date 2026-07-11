@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Camera, Heart, MapPin, Play, Trophy, Users, Calendar, Upload, CheckCircle, Link as LinkIcon, Edit, Trash2, Shield, FileText, Lock, School, LogIn, UserPlus, LogOut, Phone, Mail, User, RefreshCw, Share2, Building2, Store, Search, Filter, Download, ExternalLink, LayoutGrid, X, Star } from 'lucide-react';
+import { Camera, Heart, MapPin, Play, Trophy, Users, Calendar, Upload, CheckCircle, Link as LinkIcon, Edit, Trash2, Shield, FileText, Lock, School, LogIn, UserPlus, LogOut, Phone, Mail, User, RefreshCw, Share2, Building2, Store, Search, Filter, Download, ExternalLink, LayoutGrid, X, Star, Menu } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
 import {
@@ -730,6 +730,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -813,10 +814,11 @@ export default function App() {
     }
   };
   const navigateTo = (view) => {
+    setMobileMenuOpen(false);
     if (view === 'upload' && (!user || user.isAnonymous)) { setNotification("Registra't primer"); setTimeout(() => setNotification(null), 3000); setCurrentView('auth'); }
     else { setCurrentView(view); } window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  const handleLogout = async () => { await signOut(auth); setNotification("Adéu!"); setCurrentView('home'); setTimeout(() => setNotification(null), 3000); await signInAnonymously(auth); };
+  const handleLogout = async () => { setMobileMenuOpen(false); await signOut(auth); setNotification("Adéu!"); setCurrentView('home'); setTimeout(() => setNotification(null), 3000); await signInAnonymously(auth); };
 
 
   return (
@@ -842,7 +844,43 @@ export default function App() {
               </div>
             ) : (<button onClick={() => navigateTo('auth')} className="px-4 py-2 bg-rose-600 text-white rounded-full hover:bg-rose-700 shadow-md">Identificar-se</button>)}
           </div>
+
+          {/* BOTÓ HAMBURGUESA (només mòbil) */}
+          <button
+            className="md:hidden text-gray-600 hover:text-rose-600 p-2 -mr-2"
+            onClick={() => setMobileMenuOpen(o => !o)}
+            aria-label={mobileMenuOpen ? 'Tancar menú' : 'Obrir menú'}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
+
+        {/* MENÚ MÒBIL DESPLEGABLE */}
+        {mobileMenuOpen && (
+          <div id="mobile-menu" className="md:hidden border-t border-gray-100 bg-white shadow-lg">
+            <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-1 text-gray-700 font-medium">
+              {user && !user.isAnonymous && (
+                <div className="flex items-center gap-2 px-3 py-2 mb-1 text-gray-900 font-semibold border-b border-gray-100">
+                  {isAdmin && <Shield size={16} className="text-red-500" />}
+                  {user.displayName || user.email}
+                </div>
+              )}
+              <button onClick={() => navigateTo('home')} className="text-left px-3 py-2.5 rounded-lg hover:bg-rose-50 hover:text-rose-600">Inici</button>
+              <button onClick={() => navigateTo('gallery')} className="text-left px-3 py-2.5 rounded-lg hover:bg-rose-50 hover:text-rose-600">Galeria</button>
+              <button onClick={() => navigateTo('map')} className="text-left px-3 py-2.5 rounded-lg hover:bg-amber-50 hover:text-amber-600 flex items-center gap-2"><MapPin size={16} /> Mapa</button>
+              {user && !user.isAnonymous ? (
+                <>
+                  <button onClick={() => navigateTo('upload')} className="text-left px-3 py-2.5 mt-1 rounded-lg bg-rose-600 text-white hover:bg-rose-700 font-semibold">Participar</button>
+                  <button onClick={handleLogout} className="text-left px-3 py-2.5 rounded-lg hover:bg-gray-100 text-gray-500 flex items-center gap-2"><LogOut size={16} /> Tancar sessió</button>
+                </>
+              ) : (
+                <button onClick={() => navigateTo('auth')} className="text-left px-3 py-2.5 mt-1 rounded-lg bg-rose-600 text-white hover:bg-rose-700 font-semibold">Identificar-se</button>
+              )}
+            </div>
+          </div>
+        )}
       </nav>
 
       <main className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12 flex-grow w-full">
