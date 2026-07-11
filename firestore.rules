@@ -9,9 +9,12 @@ rules_version = '2';
 //
 // Aquest conjunt és compatible amb el client actual SENSE backend:
 //   - lectura pública (galeria i mapa)
-//   - creació només d'usuaris autenticats i amb esquema vàlid
+//   - creació només d'usuaris autenticats i amb esquema vàlid, sempre en
+//     estat status='pendent' (moderació prèvia; el client no s'autopublica)
 //   - vot = únic increment permès al camp `votes` (+1..+5), cap altre camp
-//   - edició/esborrat lliure només per a l'admin (verificat al servidor)
+//   - edició/esborrat lliure (inclosa la moderació status) només per a
+//     l'admin (verificat al servidor)
+//   - config/concurs: dates del concurs, lectura pública, escriptura admin
 //
 // PENDENT (següent pas, requereix Cloud Functions):
 //   - un vot per usuari i vídeo (subcol·lecció videos/{id}/votes/{uid})
@@ -36,13 +39,16 @@ service cloud.firestore {
     }
 
     // Validació d'un vídeo nou creat des del client de participants.
+    // status = 'pendent' obligatori: el propi client no es pot autopublicar,
+    // només l'admin (isAdmin() salta aquesta funció) pot posar 'aprovat'.
     function isValidNewVideo() {
       let d = request.resource.data;
       return isSignedIn()
         && d.userId == request.auth.uid
         && d.votes == 0
+        && d.status == 'pendent'
         && d.keys().hasOnly(['title', 'author', 'location', 'category',
-                             'url', 'userId', 'votes', 'thumbnail', 'createdAt'])
+                             'url', 'userId', 'votes', 'thumbnail', 'createdAt', 'status'])
         && d.title is string    && d.title.size() > 0    && d.title.size() <= 120
         && d.author is string   && d.author.size() > 0   && d.author.size() <= 120
         && d.location is string && d.location.size() > 0 && d.location.size() <= 200
@@ -68,8 +74,18 @@ service cloud.firestore {
     match /videos/{videoId} {
       allow read:   if true;
       allow create: if isValidNewVideo() || isAdmin();
+      // Canviar `status` (moderació) només ho pot fer l'admin: isVoteUpdate()
+      // exigeix que l'únic camp tocat sigui `votes`, així que un client normal
+      // mai pot aprovar/rebutjar el seu propi vídeo.
       allow update: if isVoteUpdate() || isAdmin();
       allow delete: if isAdmin();
+    }
+
+    // Configuració pública del concurs (dates de fases per al comptador
+    // enrere). Lectura oberta, escriptura només admin.
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // Tot allò no contemplat explícitament, denegat.

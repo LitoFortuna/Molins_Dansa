@@ -18,7 +18,8 @@ import {
   updateDoc,
   deleteDoc,
   onSnapshot,
-  query
+  query,
+  setDoc
 } from "firebase/firestore";
 // Import initialized instances
 import { auth, db } from './firebase';
@@ -38,7 +39,8 @@ const SEED_VIDEOS = [
     thumbnail: "bg-blue-200",
     category: "Grup",
     url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    createdAt: Date.now()
+    createdAt: Date.now(),
+    status: "aprovat"
   },
   {
     title: "Dansa Contemporània al Castell",
@@ -48,7 +50,8 @@ const SEED_VIDEOS = [
     thumbnail: "bg-purple-200",
     category: "Individual",
     url: "https://instagram.com",
-    createdAt: Date.now()
+    createdAt: Date.now(),
+    status: "aprovat"
   },
   {
     title: "Sardana Fusió",
@@ -58,7 +61,8 @@ const SEED_VIDEOS = [
     thumbnail: "bg-red-200",
     category: "Grup",
     url: "https://www.youtube.com/watch?v=kYtGl1dX5qI",
-    createdAt: Date.now()
+    createdAt: Date.now(),
+    status: "aprovat"
   }
 ];
 
@@ -70,6 +74,14 @@ const getYouTubeId = (url) => {
   const match = url.match(regExp);
   return match ? match[1] : null;
 };
+
+// --- CONFIG DEL CONCURS (dates de fases, doc config/concurs) ---
+const parseConfigDate = (isoDate) => {
+  if (!isoDate) return null;
+  const d = new Date(isoDate);
+  return isNaN(d.getTime()) ? null : d;
+};
+const daysUntil = (date) => Math.max(0, Math.ceil((date.getTime() - Date.now()) / 86400000));
 
 // --- COMPONENTS ---
 
@@ -88,6 +100,19 @@ const Button = ({ children, onClick, variant = 'primary', className = '', disabl
 
 const Card = ({ children, className = '', ...props }) => <div className={`bg-white rounded-xl shadow-md overflow-hidden ${className}`} {...props}>{children}</div>;
 const Badge = ({ children, color = 'bg-gray-100 text-gray-800' }) => <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${color}`}>{children}</span>;
+
+// --- MODERACIÓ: estat d'un vídeo ---
+// Sense status (vídeos anteriors a aquesta funcionalitat) es tracta com 'aprovat'.
+const STATUS_LABELS = { pendent: 'Pendent', aprovat: 'Aprovat', rebutjat: 'Rebutjat' };
+const STATUS_COLORS = {
+  pendent: 'bg-amber-100 text-amber-800',
+  aprovat: 'bg-green-100 text-green-800',
+  rebutjat: 'bg-gray-200 text-gray-600'
+};
+const StatusBadge = ({ status }) => {
+  const s = status || 'aprovat';
+  return <Badge color={STATUS_COLORS[s]}>{STATUS_LABELS[s]}</Badge>;
+};
 
 // --- COMPONENT: VIDEO PLAYER ---
 const VideoPlayer = ({ url, thumbnail, title }) => {
@@ -233,8 +258,27 @@ const AuthView = ({ onLoginSuccess, onCancel }) => {
 
 
 
-const HomeView = ({ onNavigate }) => (
+const HomeView = ({ onNavigate, contestConfig }) => {
+  const votingEndsAt = parseConfigDate(contestConfig?.votingEndsAt);
+  const submissionEndsAt = parseConfigDate(contestConfig?.submissionEndsAt);
+  const now = new Date();
+
+  let banner = null;
+  if (votingEndsAt) {
+    banner = now < votingEndsAt
+      ? { text: `Queden ${daysUntil(votingEndsAt)} dies per votar!`, closed: false }
+      : { text: 'La votació ha finalitzat. Gràcies per participar!', closed: true };
+  } else if (submissionEndsAt && now < submissionEndsAt) {
+    banner = { text: `Queden ${daysUntil(submissionEndsAt)} dies per inscriure el teu ball!`, closed: false };
+  }
+
+  return (
   <div className="space-y-12 animate-in fade-in duration-500">
+    {banner && (
+      <div className={`flex items-center justify-center gap-2 text-sm font-semibold rounded-xl px-4 py-3 ${banner.closed ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-900 border border-amber-200'}`}>
+        <Calendar size={16} /> {banner.text}
+      </div>
+    )}
     <section className="relative bg-gradient-to-br from-rose-900 via-rose-700 to-orange-500 text-white rounded-3xl overflow-hidden shadow-2xl p-8 md:p-16 text-center">
       <div className="relative z-10 max-w-3xl mx-auto">
         <span className="bg-white/20 backdrop-blur-sm px-4 py-1 rounded-full text-sm font-medium border border-white/30">2a Edició</span>
@@ -282,7 +326,8 @@ const HomeView = ({ onNavigate }) => (
       </div>
     </section>
   </div>
-);
+  );
+};
 
 const UploadView = ({ onUploadSuccess, onCancel, user }) => {
   const [formData, setFormData] = useState({ title: '', author: user ? user.displayName : '', location: '', category: 'Individual', url: '' });
@@ -293,7 +338,7 @@ const UploadView = ({ onUploadSuccess, onCancel, user }) => {
     setIsSubmitting(true);
     try {
       // SIMPLIFIED PATH: Just 'videos' implies root collection
-      const newVideo = { ...formData, userId: user.uid, votes: 0, thumbnail: 'bg-gray-300', createdAt: Date.now() };
+      const newVideo = { ...formData, userId: user.uid, votes: 0, thumbnail: 'bg-gray-300', createdAt: Date.now(), status: 'pendent' };
       const docRef = await addDoc(collection(db, 'videos'), newVideo);
 
       // --- GOOGLE SHEETS INTEGRATION ---
@@ -358,7 +403,7 @@ const UploadView = ({ onUploadSuccess, onCancel, user }) => {
   );
 };
 
-const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, onDelete, loading, onShare, user, onNavigate, highlightId }) => {
+const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, onDelete, onModerate, loading, onShare, user, onNavigate, highlightId, contestConfig }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('Tots');
 
@@ -366,14 +411,29 @@ const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, onDelete,
   const isPremiumVoter = user && !user.isAnonymous;
   const voteValue = isPremiumVoter ? 5 : 1;
 
+  const votingEndsAt = parseConfigDate(contestConfig?.votingEndsAt);
+  const votingClosed = votingEndsAt ? new Date() >= votingEndsAt : false;
+
+  const pendingCount = useMemo(() => videos.filter(v => v.status === 'pendent').length, [videos]);
+
   const filteredVideos = useMemo(() => {
-    return videos.filter(video => {
+    // El públic només veu vídeos aprovats (o sense status, per compatibilitat
+    // amb vídeos anteriors a la moderació). L'admin veu i modera tots.
+    const visible = isAdmin ? videos : videos.filter(v => v.status === 'aprovat' || v.status == null);
+    return visible.filter(video => {
       const matchesSearch = video.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         video.author.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = filterCategory === 'Tots' || video.category === filterCategory;
       return matchesSearch && matchesCategory;
-    }).sort((a, b) => b.votes - a.votes);
-  }, [videos, searchTerm, filterCategory]);
+    }).sort((a, b) => {
+      if (isAdmin) {
+        const rank = (v) => v.status === 'pendent' ? 0 : v.status === 'rebutjat' ? 2 : 1;
+        const diff = rank(a) - rank(b);
+        if (diff !== 0) return diff;
+      }
+      return b.votes - a.votes;
+    });
+  }, [videos, searchTerm, filterCategory, isAdmin]);
 
   // Deep-link: quan s'arriba amb #v=<id>, desplaça (un sol cop) i ressalta aquell vídeo.
   const scrolledRef = useRef(false);
@@ -417,13 +477,16 @@ const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, onDelete,
             <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
               Galeria
               {isAdmin && <span className="bg-red-600 text-white text-xs px-2 py-1 rounded font-bold uppercase">Admin</span>}
+              {isAdmin && pendingCount > 0 && (
+                <span className="bg-amber-500 text-white text-xs px-2 py-1 rounded-full font-bold">{pendingCount} pendents</span>
+              )}
             </h2>
             <p className="text-gray-500">Explora {filteredVideos.length} actuacions</p>
           </div>
         </div>
 
         {/* CALL TO ACTION FOR VOTING */}
-        {!isPremiumVoter && (
+        {!isPremiumVoter && !votingClosed && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="bg-amber-100 p-2 rounded-full text-amber-600"><Star size={20} fill="currentColor" /></div>
@@ -477,8 +540,15 @@ const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, onDelete,
                 </a>
 
                 {isAdmin ? (
-                  <div className="bg-red-50 p-3 rounded-lg border border-red-100">
-                    <div className="flex items-center justify-between mb-2"><label className="text-xs font-bold text-red-800 uppercase">Admin</label><button onClick={() => onDelete(video.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16} /></button></div>
+                  <div className="bg-red-50 p-3 rounded-lg border border-red-100 space-y-2">
+                    <div className="flex items-center justify-between"><label className="text-xs font-bold text-red-800 uppercase">Admin</label><button onClick={() => onDelete(video.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16} /></button></div>
+                    <div className="flex items-center justify-between gap-2">
+                      <StatusBadge status={video.status} />
+                      <div className="flex gap-1">
+                        <button onClick={() => onModerate(video.id, 'aprovat')} disabled={video.status === 'aprovat'} className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 disabled:opacity-40 disabled:cursor-not-allowed font-semibold">Aprovar</button>
+                        <button onClick={() => onModerate(video.id, 'rebutjat')} disabled={video.status === 'rebutjat'} className="text-xs px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed font-semibold">Rebutjar</button>
+                      </div>
+                    </div>
                     <div className="flex items-center gap-2">
                       <button onClick={() => onUpdateVotes(video.id, video.votes - 1)} className="w-8 h-8 flex items-center justify-center bg-white border border-red-200 rounded">-</button>
                       <input type="number" value={video.votes} onChange={(e) => onUpdateVotes(video.id, parseInt(e.target.value) || 0)} className="w-full text-center font-bold text-lg bg-white border border-red-200 rounded py-1" />
@@ -490,10 +560,14 @@ const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, onDelete,
                     <div className="text-gray-500 text-sm"><span className="font-bold text-gray-900 text-lg">{video.votes}</span> vots</div>
                     <div className="flex gap-2">
                       <button onClick={() => onShare(video)} className="p-2 bg-gray-50 hover:bg-blue-50 text-gray-500 hover:text-blue-600 rounded-full transition-colors" title="Compartir"><Share2 size={18} /></button>
-                      <button onClick={() => onVote(video.id)} className={`flex items-center gap-2 px-4 py-2 ${isPremiumVoter ? 'bg-amber-100 text-amber-900 hover:bg-amber-200' : 'bg-gray-50 text-gray-600 hover:bg-rose-50 hover:text-rose-600'} rounded-full transition-colors font-semibold group-active:scale-95`}>
-                        <Heart size={18} className={isPremiumVoter ? "fill-amber-600 text-amber-600" : "group-hover:fill-rose-600"} />
-                        Votar (+{voteValue})
-                      </button>
+                      {votingClosed ? (
+                        <span className="text-xs text-gray-400 font-medium px-3 py-2 whitespace-nowrap">Votació tancada</span>
+                      ) : (
+                        <button onClick={() => onVote(video.id)} className={`flex items-center gap-2 px-4 py-2 ${isPremiumVoter ? 'bg-amber-100 text-amber-900 hover:bg-amber-200' : 'bg-gray-50 text-gray-600 hover:bg-rose-50 hover:text-rose-600'} rounded-full transition-colors font-semibold group-active:scale-95`}>
+                          <Heart size={18} className={isPremiumVoter ? "fill-amber-600 text-amber-600" : "group-hover:fill-rose-600"} />
+                          Votar (+{voteValue})
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -625,6 +699,51 @@ const SchoolsView = ({ onBack }) => (
   </div>
 );
 
+// --- ADMIN: EDITOR DE DATES DEL CONCURS ---
+// Editor mínim (només admin) de config/concurs: dates d'inscripció, votació
+// i gala que alimenten el comptador enrere de HomeView i el tancament
+// automàtic del vot a GalleryView.
+const AdminConfigPanel = ({ contestConfig, configLoaded, onSave }) => {
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    const fd = new FormData(e.target);
+    await onSave({
+      submissionEndsAt: fd.get('submissionEndsAt') || '',
+      votingEndsAt: fd.get('votingEndsAt') || '',
+      galaAt: fd.get('galaAt') || '',
+    });
+    setSaving(false);
+  };
+
+  return (
+    // key: remunta el formulari (inputs no controlats) un sol cop, quan arriba
+    // la primera càrrega de Firestore, per adoptar-ne els valors com a defaultValue.
+    <form key={configLoaded ? 'loaded' : 'loading'} onSubmit={handleSave} className="space-y-2">
+      <p className="text-gray-500 font-mono text-xs uppercase tracking-wider">Dates del concurs</p>
+      <div className="grid grid-cols-3 gap-2">
+        <label className="flex flex-col gap-1 text-xs text-gray-400">
+          Inscripció fins
+          <input name="submissionEndsAt" type="date" defaultValue={contestConfig?.submissionEndsAt || ''} className="bg-gray-800 text-white rounded px-2 py-1 text-xs" />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-gray-400">
+          Votació fins
+          <input name="votingEndsAt" type="date" defaultValue={contestConfig?.votingEndsAt || ''} className="bg-gray-800 text-white rounded px-2 py-1 text-xs" />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-gray-400">
+          Gala
+          <input name="galaAt" type="date" defaultValue={contestConfig?.galaAt || ''} className="bg-gray-800 text-white rounded px-2 py-1 text-xs" />
+        </label>
+      </div>
+      <button type="submit" disabled={saving} className="flex items-center gap-2 text-xs text-blue-400 hover:text-blue-300 font-mono disabled:opacity-50">
+        <Calendar size={12} /> {saving ? 'Desant...' : 'Desar dates'}
+      </button>
+    </form>
+  );
+};
+
 // --- APP ---
 // Noms de vista (que fan servir les vistes via onNavigate) → rutes reals.
 const VIEW_PATHS = {
@@ -669,6 +788,8 @@ function Main() {
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [contestConfig, setContestConfig] = useState({});
+  const [configLoaded, setConfigLoaded] = useState(false);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -702,6 +823,22 @@ function Main() {
     });
     return () => unsubscribe();
   }, [user]);
+
+  // Config del concurs (dates de fases): lectura pública, no depèn de l'auth.
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'config', 'concurs'), (snap) => {
+      setContestConfig(snap.exists() ? snap.data() : {});
+      setConfigLoaded(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Vídeos visibles públicament (aprovats, o sense status per compatibilitat
+  // amb vídeos anteriors a la moderació): és el que mostra el mapa.
+  const approvedVideos = useMemo(
+    () => videos.filter(v => v.status === 'aprovat' || v.status == null),
+    [videos]
+  );
 
   const seedDatabase = async () => {
     if (!user) return;
@@ -750,6 +887,19 @@ function Main() {
     if (confirm("Eliminar?")) {
       try { await deleteDoc(doc(db, 'videos', id)); }
       catch (err) { console.error(err); setNotification("Error en eliminar: " + err.message); setTimeout(() => setNotification(null), 3000); }
+    }
+  };
+  const handleAdminModerate = async (id, status) => {
+    try { await updateDoc(doc(db, 'videos', id), { status }); }
+    catch (err) { console.error(err); setNotification("Error en moderar: " + err.message); setTimeout(() => setNotification(null), 3000); }
+  };
+  const handleSaveConfig = async (dates) => {
+    try {
+      await setDoc(doc(db, 'config', 'concurs'), dates, { merge: true });
+      setNotification("Dates desades!"); setTimeout(() => setNotification(null), 3000);
+    } catch (err) {
+      console.error(err);
+      setNotification("Error en desar les dates: " + err.message); setTimeout(() => setNotification(null), 3000);
     }
   };
   const navigateTo = (view) => {
@@ -829,13 +979,13 @@ function Main() {
       <main className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12 flex-grow w-full">
         {notification && <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 z-50"><CheckCircle className="text-green-400" size={20} />{notification}</div>}
         <Routes>
-          <Route path="/" element={<HomeView onNavigate={navigateTo} />} />
-          <Route path="/galeria" element={<GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={null} />} />
-          <Route path="/video/:id" element={<RouteWithVideoId render={(id) => <GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={id} />} />} />
-          <Route path="/mapa" element={<Suspense fallback={<div className="text-center py-20 text-gray-400">Carregant mapa…</div>}><MapView onBack={() => navigateTo('home')} videos={videos} /></Suspense>} />
+          <Route path="/" element={<HomeView onNavigate={navigateTo} contestConfig={contestConfig} />} />
+          <Route path="/galeria" element={<GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onModerate={handleAdminModerate} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={null} contestConfig={contestConfig} />} />
+          <Route path="/video/:id" element={<RouteWithVideoId render={(id) => <GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onModerate={handleAdminModerate} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={id} contestConfig={contestConfig} />} />} />
+          <Route path="/mapa" element={<Suspense fallback={<div className="text-center py-20 text-gray-400">Carregant mapa…</div>}><MapView onBack={() => navigateTo('home')} videos={approvedVideos} /></Suspense>} />
           <Route path="/identificacio" element={<AuthView onLoginSuccess={() => navigate('/participa')} onCancel={() => navigateTo('home')} />} />
           <Route path="/participa" element={<RequireAuth><UploadView onUploadSuccess={handleUploadSuccess} onCancel={() => navigateTo('home')} user={user} /></RequireAuth>} />
-          <Route path="/enviat" element={<div className="text-center py-20"><div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle size={48} /></div><h2 className="text-4xl font-bold mb-4">Rebut!</h2><div className="flex justify-center gap-4"><Button onClick={() => navigateTo('gallery')}>Galeria</Button></div></div>} />
+          <Route path="/enviat" element={<div className="text-center py-20"><div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle size={48} /></div><h2 className="text-4xl font-bold mb-4">Rebut!</h2><p className="text-gray-500 max-w-md mx-auto mb-6">El teu vídeo serà revisat abans d'aparèixer a la galeria pública.</p><div className="flex justify-center gap-4"><Button onClick={() => navigateTo('gallery')}>Galeria</Button></div></div>} />
           <Route path="/premis" element={<PrizesView onBack={() => navigateTo('home')} />} />
           <Route path="/bases" element={<BasesView onBack={() => navigateTo('home')} onNavigate={navigateTo} />} />
           <Route path="/privacitat" element={<PrivacyView onBack={() => navigateTo('home')} />} />
@@ -876,6 +1026,8 @@ function Main() {
                   <RefreshCw size={12} /> Carregar Dades Exemple
                 </button>
               )}
+
+              {isAdmin && <AdminConfigPanel contestConfig={contestConfig} configLoaded={configLoaded} onSave={handleSaveConfig} />}
             </div>
           </div>
         </div>
