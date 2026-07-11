@@ -3,7 +3,6 @@ import { Camera, Heart, MapPin, Play, Trophy, Users, Calendar, Upload, CheckCirc
 
 // --- FIREBASE IMPORTS ---
 import {
-  signInWithCustomToken,
   signInAnonymously,
   onAuthStateChanged,
   createUserWithEmailAndPassword,
@@ -18,16 +17,15 @@ import {
   updateDoc,
   deleteDoc,
   onSnapshot,
-  query,
-  getDocs
+  query
 } from "firebase/firestore";
 // Import initialized instances
-import { auth, db, appId } from './firebase';
+import { auth, db } from './firebase';
 
 // CONSTANTE ADMIN UID (SEGURIDAD)
+// Intermedi: la comprovació real d'admin viu a firestore.rules (isAdmin()).
+// Aquí només serveix per mostrar/amagar UI. Objectiu: custom claim `admin`.
 const ADMIN_UID = 'go7iiu9IjRTuMsnHgEVM5ho8IZD2';
-
-const VIDEOS_COLLECTION_PATH = ['artifacts', appId, 'public', 'data', 'videos'];
 
 // --- Dades Inicials (Seed Data) ---
 const SEED_VIDEOS = [
@@ -735,10 +733,11 @@ export default function App() {
 
   useEffect(() => {
     const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        try { await signInWithCustomToken(auth, __initial_auth_token); }
-        catch (e) { await signInAnonymously(auth); }
-      } else { await signInAnonymously(auth); }
+      try {
+        if (!auth.currentUser) await signInAnonymously(auth);
+      } catch (e) {
+        console.error("Error en l'inici de sessió anònim:", e);
+      }
     };
     initAuth();
     // AUTH LISTENER PARA ADMIN Y USER
@@ -800,11 +799,19 @@ export default function App() {
 
   const handleShare = async (video) => {
     const shareData = { title: video.title, text: `Vota ${video.title} a Molins Dansa!`, url: window.location.href };
-    if (navigator.share) { try { await navigator.share(shareData); } catch (err) { } }
+    if (navigator.share) { try { await navigator.share(shareData); } catch { /* compartir cancel·lat per l'usuari */ } }
     else { navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`); setNotification("Enllaç copiat!"); setTimeout(() => setNotification(null), 3000); }
   };
-  const handleAdminUpdateVotes = async (id, newVotes) => { try { await updateDoc(doc(db, 'videos', id), { votes: Math.max(0, newVotes) }); } catch (err) { } };
-  const handleAdminDelete = async (id) => { if (confirm("Eliminar?")) { try { await deleteDoc(doc(db, 'videos', id)); } catch (err) { } } };
+  const handleAdminUpdateVotes = async (id, newVotes) => {
+    try { await updateDoc(doc(db, 'videos', id), { votes: Math.max(0, newVotes) }); }
+    catch (err) { console.error(err); setNotification("Error en actualitzar els vots: " + err.message); setTimeout(() => setNotification(null), 3000); }
+  };
+  const handleAdminDelete = async (id) => {
+    if (confirm("Eliminar?")) {
+      try { await deleteDoc(doc(db, 'videos', id)); }
+      catch (err) { console.error(err); setNotification("Error en eliminar: " + err.message); setTimeout(() => setNotification(null), 3000); }
+    }
+  };
   const navigateTo = (view) => {
     if (view === 'upload' && (!user || user.isAnonymous)) { setNotification("Registra't primer"); setTimeout(() => setNotification(null), 3000); setCurrentView('auth'); }
     else { setCurrentView(view); } window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -879,7 +886,7 @@ export default function App() {
                 </div>
               )}
 
-              {(isAdmin || (videos.length === 0 && !loading)) && (
+              {isAdmin && (
                 <button onClick={seedDatabase} className="flex items-center gap-2 text-xs text-blue-400 hover:text-blue-300 font-mono">
                   <RefreshCw size={12} /> Carregar Dades Exemple
                 </button>

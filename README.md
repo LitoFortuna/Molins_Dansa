@@ -1,16 +1,62 @@
-# React + Vite
+# Molins Dansa 2026
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicació web del concurs de vídeos de dansa en espais públics de Molins de Rei,
+organitzat per l'**Associació Dance Space**. Els participants inscriuen un enllaç
+(YouTube / Instagram), el públic vota i les actuacions es mostren en una galeria
+i en un mapa interactiu.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **React 19** + **Vite 7**
+- **Tailwind CSS 4** (via `@tailwindcss/postcss`)
+- **Firebase**: Authentication (email/contrasenya + anònim) i Firestore
+- **Leaflet** + `react-leaflet` + `markercluster` per al mapa
+- Desplegament: **Firebase Hosting**
 
-## React Compiler
+## Posada en marxa
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# 1. Instal·la dependències
+npm install
 
-## Expanding the ESLint configuration
+# 2. Configura Firebase
+cp .env.example .env      # i omple els valors (veure .env.example)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# 3. Arrenca en desenvolupament
+npm run dev
+```
+
+Altres scripts:
+
+```bash
+npm run build     # build de producció a dist/
+npm run preview   # serveix el build localment
+npm run lint      # ESLint
+```
+
+## Desplegament
+
+```bash
+npm run build
+firebase deploy --only hosting                 # publica el web
+firebase deploy --only firestore:rules         # publica les regles de seguretat
+```
+
+> **Important:** les regles de `firestore.rules` són la barrera de seguretat real
+> del concurs (integritat dels vots, protecció de dades). Reviseu i proveu els canvis
+> amb l'emulador abans de desplegar-les. Veure el pla de millora del projecte.
+
+## Estructura actual
+
+Tota la lògica viu, de moment, a `src/App.jsx`. El pla de refactor preveu dividir-la
+en `lib/`, `components/ui/`, `features/{auth,videos,voting,map,admin}/` i `pages/`.
+
+```
+src/
+  App.jsx        # tota l'app (vistes, components, lògica Firebase)
+  firebase.js    # inicialització de Firebase des de variables VITE_FIREBASE_*
+  main.jsx       # punt d'entrada
+  index.css      # @import "tailwindcss"
+firestore.rules  # regles de seguretat de Firestore
+firebase.json    # config de Hosting + Firestore
+```

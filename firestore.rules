@@ -1,9 +1,80 @@
 rules_version = '2';
+
+// ---------------------------------------------------------------------------
+// Molins Dansa 2026 — Regles de seguretat de Firestore
+//
+// Enduriment INTERMEDI (Fase 1 del pla de millora). Substitueix l'antic
+// `allow read, write: if true`, que permetia a qualsevol llegir, reescriure
+// vots, editar títols o esborrar tot el concurs.
+//
+// Aquest conjunt és compatible amb el client actual SENSE backend:
+//   - lectura pública (galeria i mapa)
+//   - creació només d'usuaris autenticats i amb esquema vàlid
+//   - vot = únic increment permès al camp `votes` (+1..+5), cap altre camp
+//   - edició/esborrat lliure només per a l'admin (verificat al servidor)
+//
+// PENDENT (següent pas, requereix Cloud Functions):
+//   - un vot per usuari i vídeo (subcol·lecció videos/{id}/votes/{uid})
+//   - recompte de vots calculat al servidor (el client deixa d'escriure `votes`)
+//   - admin via custom claim en lloc de l'UID fix d'aquí sota
+//
+// Desplegar amb:  firebase deploy --only firestore:rules
+// Provar abans amb l'emulador:  firebase emulators:start
+// ---------------------------------------------------------------------------
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permitir leer i escriure a la col·lecció 'videos' a tothom (Demo/Test Mode)
-    match /videos/{video} {
-      allow read, write: if true;
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Intermedi: admin per UID. Objectiu: request.auth.token.admin == true
+    function isAdmin() {
+      return isSignedIn()
+        && request.auth.uid == 'go7iiu9IjRTuMsnHgEVM5ho8IZD2';
+    }
+
+    // Validació d'un vídeo nou creat des del client de participants.
+    function isValidNewVideo() {
+      let d = request.resource.data;
+      return isSignedIn()
+        && d.userId == request.auth.uid
+        && d.votes == 0
+        && d.keys().hasOnly(['title', 'author', 'location', 'category',
+                             'url', 'userId', 'votes', 'thumbnail', 'createdAt'])
+        && d.title is string    && d.title.size() > 0    && d.title.size() <= 120
+        && d.author is string   && d.author.size() > 0   && d.author.size() <= 120
+        && d.location is string && d.location.size() > 0 && d.location.size() <= 200
+        && d.url is string      && d.url.size() <= 500   && d.url.matches('https://.*')
+        && d.category in ['Individual', 'Grup', 'Escola de Dansa']
+        && d.thumbnail is string
+        && d.createdAt is number;
+    }
+
+    // Un vot: només canvia `votes`, i puja entre +1 i +5 (públic / registrat).
+    // No impedeix votar diverses vegades (això arriba amb la subcol·lecció);
+    // sí impedeix fixar valors arbitraris o tocar cap altre camp.
+    function isVoteUpdate() {
+      let before = resource.data;
+      let after = request.resource.data;
+      return isSignedIn()
+        && after.diff(before).affectedKeys().hasOnly(['votes'])
+        && after.votes is int
+        && after.votes > before.votes
+        && after.votes <= before.votes + 5;
+    }
+
+    match /videos/{videoId} {
+      allow read:   if true;
+      allow create: if isValidNewVideo() || isAdmin();
+      allow update: if isVoteUpdate() || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Tot allò no contemplat explícitament, denegat.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
