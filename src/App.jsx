@@ -693,14 +693,14 @@ const PrivacyView = ({ onBack }) => (
       <h2 className="text-3xl font-bold mb-6 flex items-center gap-2"><Lock className="text-rose-600" /> Política de Privacitat</h2>
 
       <div className="mb-6 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
-        Text pendent de revisió legal: els camps entre claudàtors [ ] s'han d'omplir amb les dades reals
-        de l'entitat abans de considerar aquest document definitiu.
+        Text pendent de revisió legal: falta decidir el termini de conservació de les dades (apartat 5,
+        marcat entre claudàtors [ ]) abans de considerar aquest document definitiu.
       </div>
 
       <div className="prose prose-rose max-w-none text-gray-700 space-y-4 text-sm">
         <p><strong>1. Responsable del tractament</strong><br />
-          Associació Dance Space, amb NIF [NIF de l'associació] i domicili a [adreça postal de l'associació].
-          Contacte: info@dancespace.cat</p>
+          Associació Dance Space, amb NIF G55376776 i domicili a C/ Menéndez Pelayo 12, 08750 Molins de Rei
+          (Barcelona), Espanya. Contacte: info@dancespace.cat</p>
 
         <p><strong>2. Finalitats i base jurídica</strong></p>
         <ul className="list-disc pl-5 space-y-1">
@@ -726,7 +726,7 @@ const PrivacyView = ({ onBack }) => (
 
         <p><strong>5. Termini de conservació</strong><br />
           Les dades es conserven mentre duri el concurs i fins a [termini, p. ex. 3 mesos] després de l'acte de
-          clausura ([mes] de 2026), moment en què es suprimeixen o s'anonimitzen, tret dels vídeos guanyadors si
+          clausura (juny de 2026), moment en què es suprimeixen o s'anonimitzen, tret dels vídeos guanyadors si
           la persona participant en consent la conservació per a la difusió del concurs.</p>
 
         <p><strong>6. Drets de la persona interessada</strong><br />
