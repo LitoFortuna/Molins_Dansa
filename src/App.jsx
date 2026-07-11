@@ -403,7 +403,7 @@ const UploadView = ({ onUploadSuccess, onCancel, user }) => {
   );
 };
 
-const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, onDelete, onModerate, loading, onShare, user, onNavigate, highlightId, contestConfig }) => {
+const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, onDelete, onModerate, loading, onShare, user, onNavigate, highlightId, contestConfig, votedIds = new Set() }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('Tots');
 
@@ -562,6 +562,10 @@ const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, onDelete,
                       <button onClick={() => onShare(video)} className="p-2 bg-gray-50 hover:bg-blue-50 text-gray-500 hover:text-blue-600 rounded-full transition-colors" title="Compartir"><Share2 size={18} /></button>
                       {votingClosed ? (
                         <span className="text-xs text-gray-400 font-medium px-3 py-2 whitespace-nowrap">Votació tancada</span>
+                      ) : votedIds.has(video.id) ? (
+                        <span className="flex items-center gap-2 text-xs text-green-600 font-semibold px-3 py-2 whitespace-nowrap">
+                          <CheckCircle size={16} /> Vot registrat
+                        </span>
                       ) : (
                         <button onClick={() => onVote(video.id)} className={`flex items-center gap-2 px-4 py-2 ${isPremiumVoter ? 'bg-amber-100 text-amber-900 hover:bg-amber-200' : 'bg-gray-50 text-gray-600 hover:bg-rose-50 hover:text-rose-600'} rounded-full transition-colors font-semibold group-active:scale-95`}>
                           <Heart size={18} className={isPremiumVoter ? "fill-amber-600 text-amber-600" : "group-hover:fill-rose-600"} />
@@ -787,6 +791,12 @@ function Main() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  // Vídeos ja votats EN AQUESTA CÀRREGA de la pàgina: viu només en memòria,
+  // així que un refresc del navegador el reinicia i es pot tornar a votar.
+  // No és una protecció anti-frau (això requeriria un vot per usuari al
+  // servidor); és només per evitar votar el mateix vídeo diverses vegades
+  // clicant repetidament dins la mateixa visita.
+  const [votedIds, setVotedIds] = useState(() => new Set());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [contestConfig, setContestConfig] = useState({});
   const [configLoaded, setConfigLoaded] = useState(false);
@@ -856,6 +866,7 @@ function Main() {
 
   // --- LOGICA DE VOT DUAL ---
   const handleVote = async (id) => {
+    if (votedIds.has(id)) return; // ja votat en aquesta càrrega de pàgina
     const video = videos.find(v => v.id === id);
     if (!video) return;
 
@@ -863,12 +874,18 @@ function Main() {
     const isPremium = user && !user.isAnonymous;
     const points = isPremium ? 5 : 1;
 
+    // Marca el vot ABANS de l'escriptura: evita que un doble clic ràpid
+    // (dues invocacions abans que React re-renderitzi) passi el guard de dalt
+    // dues vegades. Si l'escriptura falla, es desfà per permetre reintentar.
+    setVotedIds(prev => new Set(prev).add(id));
+
     try {
       await updateDoc(doc(db, 'videos', id), { votes: video.votes + points });
       setNotification(`Vot registrat (+${points} punts)!`);
       setTimeout(() => setNotification(null), 2000);
     } catch (err) {
       console.error(err);
+      setVotedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
       setNotification("Error: " + err.message);
     }
   };
@@ -980,8 +997,8 @@ function Main() {
         {notification && <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 z-50"><CheckCircle className="text-green-400" size={20} />{notification}</div>}
         <Routes>
           <Route path="/" element={<HomeView onNavigate={navigateTo} contestConfig={contestConfig} />} />
-          <Route path="/galeria" element={<GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onModerate={handleAdminModerate} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={null} contestConfig={contestConfig} />} />
-          <Route path="/video/:id" element={<RouteWithVideoId render={(id) => <GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onModerate={handleAdminModerate} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={id} contestConfig={contestConfig} />} />} />
+          <Route path="/galeria" element={<GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onModerate={handleAdminModerate} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={null} contestConfig={contestConfig} votedIds={votedIds} />} />
+          <Route path="/video/:id" element={<RouteWithVideoId render={(id) => <GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onModerate={handleAdminModerate} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={id} contestConfig={contestConfig} votedIds={votedIds} />} />} />
           <Route path="/mapa" element={<Suspense fallback={<div className="text-center py-20 text-gray-400">Carregant mapa…</div>}><MapView onBack={() => navigateTo('home')} videos={approvedVideos} /></Suspense>} />
           <Route path="/identificacio" element={<AuthView onLoginSuccess={() => navigate('/participa')} onCancel={() => navigateTo('home')} />} />
           <Route path="/participa" element={<RequireAuth><UploadView onUploadSuccess={handleUploadSuccess} onCancel={() => navigateTo('home')} user={user} /></RequireAuth>} />
