@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { Camera, Heart, MapPin, Play, Trophy, Users, Calendar, Upload, CheckCircle, Link as LinkIcon, Edit, Trash2, Shield, FileText, Lock, School, LogIn, UserPlus, LogOut, Phone, Mail, User, RefreshCw, Share2, Building2, Store, Search, Filter, Download, ExternalLink, LayoutGrid, X, Star, Menu } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
@@ -357,7 +357,7 @@ const UploadView = ({ onUploadSuccess, onCancel, user }) => {
   );
 };
 
-const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, onDelete, loading, onShare, user, onNavigate }) => {
+const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, onDelete, loading, onShare, user, onNavigate, highlightId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('Tots');
 
@@ -373,6 +373,14 @@ const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, onDelete,
       return matchesSearch && matchesCategory;
     }).sort((a, b) => b.votes - a.votes);
   }, [videos, searchTerm, filterCategory]);
+
+  // Deep-link: quan s'arriba amb #v=<id>, desplaça (un sol cop) i ressalta aquell vídeo.
+  const scrolledRef = useRef(false);
+  useEffect(() => {
+    if (!highlightId || scrolledRef.current) return;
+    const el = document.getElementById(`video-${highlightId}`);
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); scrolledRef.current = true; }
+  }, [highlightId, filteredVideos]);
 
   const exportToCSV = () => {
     const headers = "ID,Titol,Autor,Categoria,Lloc,Vots,Enllaç,Data\n";
@@ -449,7 +457,7 @@ const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, onDelete,
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredVideos.map((video, idx) => (
-            <Card key={video.id} className={`group hover:shadow-2xl transition-all duration-300 border ${isAdmin ? 'border-red-200 ring-1 ring-red-100' : 'border-gray-100'}`}>
+            <Card key={video.id} id={`video-${video.id}`} className={`group hover:shadow-2xl transition-all duration-300 border ${video.id === highlightId ? 'ring-2 ring-rose-500 ring-offset-2' : isAdmin ? 'border-red-200 ring-1 ring-red-100' : 'border-gray-100'}`}>
               <VideoPlayer url={video.url} thumbnail={video.thumbnail} title={video.title} />
               <div className="relative">
                 <div className="absolute -top-10 right-3 z-20"><Badge color="bg-black/50 text-white backdrop-blur-md">{video.category}</Badge></div>
@@ -618,13 +626,18 @@ const SchoolsView = ({ onBack }) => (
 
 // --- APP ---
 export default function App() {
-  const [currentView, setCurrentView] = useState('home');
+  // Deep-link: si s'obre amb #v=<id>, arrencar directament a la galeria.
+  const [currentView, setCurrentView] = useState(() => /[#&]v=[\w-]+/.test(window.location.hash) ? 'gallery' : 'home');
   const [videos, setVideos] = useState([]);
   const [notification, setNotification] = useState(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [highlightId, setHighlightId] = useState(() => {
+    const m = window.location.hash.match(/[#&]v=([\w-]+)/);
+    return m ? m[1] : null;
+  });
 
   useEffect(() => {
     const initAuth = async () => {
@@ -693,9 +706,10 @@ export default function App() {
   };
 
   const handleShare = async (video) => {
-    const shareData = { title: video.title, text: `Vota ${video.title} a Molins Dansa!`, url: window.location.href };
+    const url = `${window.location.origin}${window.location.pathname}#v=${video.id}`;
+    const shareData = { title: video.title, text: `Vota ${video.title} a Molins Dansa!`, url };
     if (navigator.share) { try { await navigator.share(shareData); } catch { /* compartir cancel·lat per l'usuari */ } }
-    else { navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`); setNotification("Enllaç copiat!"); setTimeout(() => setNotification(null), 3000); }
+    else { navigator.clipboard.writeText(`${shareData.text} ${url}`); setNotification("Enllaç copiat!"); setTimeout(() => setNotification(null), 3000); }
   };
   const handleAdminUpdateVotes = async (id, newVotes) => {
     try { await updateDoc(doc(db, 'videos', id), { votes: Math.max(0, newVotes) }); }
@@ -709,6 +723,8 @@ export default function App() {
   };
   const navigateTo = (view) => {
     setMobileMenuOpen(false);
+    setHighlightId(null);
+    if (window.location.hash) window.history.replaceState(null, '', window.location.pathname + window.location.search);
     if (view === 'upload' && (!user || user.isAnonymous)) { setNotification("Registra't primer"); setTimeout(() => setNotification(null), 3000); setCurrentView('auth'); }
     else { setCurrentView(view); } window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -783,7 +799,7 @@ export default function App() {
         {currentView === 'auth' && <AuthView onLoginSuccess={() => navigateTo('upload')} onCancel={() => navigateTo('home')} />}
         {currentView === 'upload' && <UploadView onUploadSuccess={handleUploadSuccess} onCancel={() => navigateTo('home')} user={user} />}
         {currentView === 'success' && <div className="text-center py-20"><div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle size={48} /></div><h2 className="text-4xl font-bold mb-4">Rebut!</h2><div className="flex justify-center gap-4"><Button onClick={() => navigateTo('gallery')}>Galeria</Button></div></div>}
-        {currentView === 'gallery' && <GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onShare={handleShare} user={user} onNavigate={navigateTo} />}
+        {currentView === 'gallery' && <GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={highlightId} />}
         {currentView === 'map' && (
           <Suspense fallback={<div className="text-center py-20 text-gray-400">Carregant mapa…</div>}>
             <MapView onBack={() => navigateTo('home')} videos={videos} />
