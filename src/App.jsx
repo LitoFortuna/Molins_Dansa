@@ -823,16 +823,27 @@ function Main() {
     return () => unsubscribe();
   }, []);
 
+  // Lectura pública (firestore.rules: allow read: if true), independent de
+  // l'auth: si signInAnonymously falla, la galeria ha de carregar igualment
+  // en lloc de quedar-se "Carregant vídeos..." per sempre.
   useEffect(() => {
-    if (!user) return;
     const q = query(collection(db, 'videos'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const vids = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setVideos(vids);
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const vids = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setVideos(vids);
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Error carregant els vídeos:", err);
+        setLoading(false);
+        setNotification("Error carregant els vídeos: " + err.message);
+        setTimeout(() => setNotification(null), 5000);
+      }
+    );
     return () => unsubscribe();
-  }, [user]);
+  }, []);
 
   // Config del concurs (dates de fases): lectura pública, no depèn de l'auth.
   useEffect(() => {
