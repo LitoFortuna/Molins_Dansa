@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Camera, Heart, MapPin, Play, Trophy, Users, Calendar, Upload, CheckCircle, Link as LinkIcon, Edit, Trash2, Shield, FileText, Lock, School, LogIn, UserPlus, LogOut, Phone, Mail, User, RefreshCw, Share2, Building2, Store, Search, Filter, Download, ExternalLink, LayoutGrid, X, Star, Menu } from 'lucide-react';
+import { Camera, Heart, MapPin, Play, Trophy, Users, Calendar, Upload, CheckCircle, Link as LinkIcon, Edit, Trash2, Shield, FileText, Lock, School, LogIn, UserPlus, LogOut, Mail, User, RefreshCw, Share2, Building2, Store, Search, Filter, Download, ExternalLink, LayoutGrid, X, Star, Menu } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
 import {
@@ -196,7 +196,6 @@ const AuthView = ({ onLoginSuccess, onCancel }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -243,7 +242,6 @@ const AuthView = ({ onLoginSuccess, onCancel }) => {
           {isRegistering && (
             <div className="space-y-4 animate-in fade-in">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Nom i Cognoms</label><div className="relative"><User className="absolute left-3 top-2.5 text-gray-400" size={18} /><input required={isRegistering} type="text" className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none" placeholder="Joan Garcia" value={name} onChange={(e) => setName(e.target.value)} /></div></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Telèfon</label><div className="relative"><Phone className="absolute left-3 top-2.5 text-gray-400" size={18} /><input required={isRegistering} type="tel" className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none" placeholder="600 000 000" value={phone} onChange={(e) => setPhone(e.target.value)} /></div></div>
             </div>
           )}
           <div><label className="block text-sm font-medium text-gray-700 mb-1">Email</label><div className="relative"><Mail className="absolute left-3 top-2.5 text-gray-400" size={18} /><input required type="email" className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none" placeholder="hola@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} /></div></div>
@@ -329,9 +327,10 @@ const HomeView = ({ onNavigate, contestConfig }) => {
   );
 };
 
-const UploadView = ({ onUploadSuccess, onCancel, user }) => {
+const UploadView = ({ onUploadSuccess, onCancel, onNavigate, user }) => {
   const [formData, setFormData] = useState({ title: '', author: user ? user.displayName : '', location: '', category: 'Individual', url: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [acceptImageRights, setAcceptImageRights] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -396,7 +395,24 @@ const UploadView = ({ onUploadSuccess, onCancel, user }) => {
             <p className="text-xs text-gray-500 mt-1">Indica l'adreça exacta o coordenades per al mapa interactiu.</p>
           </div>
           <input required type="url" className="w-full px-4 py-2 border rounded" placeholder="Enllaç (YouTube/Instagram)..." value={formData.url} onChange={e => setFormData({ ...formData, url: e.target.value })} />
-          <Button className="w-full" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Enviant...' : 'Enviar'}</Button>
+
+          <div className="flex items-start gap-2 pt-2 border-t border-gray-100">
+            <input
+              required
+              type="checkbox"
+              id="imageRights"
+              checked={acceptImageRights}
+              onChange={(e) => setAcceptImageRights(e.target.checked)}
+              className="mt-1 rounded text-rose-600 focus:ring-rose-500"
+            />
+            <label htmlFor="imageRights" className="text-sm text-gray-500">
+              Confirmo que tinc l'autorització de totes les persones que surten al vídeo per participar i cedir-ne els drets d'imatge —
+              si hi ha menors d'edat, dels seus pares o tutors legals— segons les{' '}
+              <button type="button" onClick={() => onNavigate?.('bases')} className="text-rose-600 underline">bases del concurs</button>.
+            </label>
+          </div>
+
+          <Button className="w-full" type="submit" disabled={isSubmitting || !acceptImageRights}>{isSubmitting ? 'Enviant...' : 'Enviar'}</Button>
         </form>
       </Card>
     </div>
@@ -651,7 +667,7 @@ const BasesView = ({ onBack, onNavigate }) => (
     <Card className="p-8">
       <h2 className="text-3xl font-bold mb-6">Bases del Concurs</h2>
       <div className="prose prose-rose max-w-none text-gray-700 space-y-4">
-        <p><strong>1. Participació:</strong> Obert a tothom sense límit d'edat. Els menors necessiten autorització.</p>
+        <p><strong>1. Participació:</strong> Obert a tothom sense límit d'edat. Si al vídeo hi surten persones menors d'edat, qui l'inscrigui ha de disposar prèviament de l'autorització dels seus pares o tutors legals per participar-hi i cedir-ne els drets d'imatge; l'organització podrà sol·licitar-ne còpia en qualsevol moment.</p>
         <p><strong>2. Temàtica:</strong> Dansa en espais públics de Molins de Rei.</p>
         <p><strong>3. Format:</strong> Vídeos horitzontals de màxim 2 minuts.</p>
 
@@ -664,7 +680,7 @@ const BasesView = ({ onBack, onNavigate }) => (
         </div>
 
         <p><strong>4. Dates:</strong> Submissió de vídeos fins al 30 de Maig de 2026.</p>
-        <p><strong>5. Drets d'imatge:</strong> Els participants cedeixen els drets per a la difusió en xarxes socials de l'Ajuntament.</p>
+        <p><strong>5. Drets d'imatge:</strong> En inscriure un vídeo, la persona participant declara disposar de l'autorització de totes les persones identificables que hi surten (inclosos vianants captats a l'espai públic) i cedeix els drets d'imatge del vídeo a l'Associació Dance Space i a l'Ajuntament de Molins de Rei per a la difusió del concurs a les seves xarxes socials i webs.</p>
       </div>
     </Card>
   </div>
@@ -675,12 +691,50 @@ const PrivacyView = ({ onBack }) => (
     <button onClick={onBack} className="text-sm text-gray-500 hover:text-rose-600 mb-6 flex items-center gap-1">← Tornar</button>
     <Card className="p-8">
       <h2 className="text-3xl font-bold mb-6 flex items-center gap-2"><Lock className="text-rose-600" /> Política de Privacitat</h2>
-      <p className="mb-4">D'acord amb el RGPD, us informem que les vostres dades seran tractades per l'Associació Dance Space exclusivament per a la gestió del concurs.</p>
-      <ul className="list-disc pl-5 space-y-2 mb-4">
-        <li>No compartirem el vostre email amb tercers.</li>
-        <li>Podeu exercir els vostres drets d'accés, rectificació i cancel·lació enviant un email.</li>
-        <li>Les dades de localització només s'usen per al mapa interactiu.</li>
-      </ul>
+
+      <div className="mb-6 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+        Text pendent de revisió legal: els camps entre claudàtors [ ] s'han d'omplir amb les dades reals
+        de l'entitat abans de considerar aquest document definitiu.
+      </div>
+
+      <div className="prose prose-rose max-w-none text-gray-700 space-y-4 text-sm">
+        <p><strong>1. Responsable del tractament</strong><br />
+          Associació Dance Space, amb NIF [NIF de l'associació] i domicili a [adreça postal de l'associació].
+          Contacte: info@dancespace.cat</p>
+
+        <p><strong>2. Finalitats i base jurídica</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Gestió del compte d'usuari (registre, autenticació) — execució d'una relació amb l'interessat.</li>
+          <li>Participació al concurs: publicació del títol, nom artístic, ubicació i enllaç del vídeo a la galeria i al mapa públics — consentiment exprés atorgat en inscriure el vídeo.</li>
+          <li>Recompte de vots del "Premi del Públic".</li>
+          <li>Contacte amb la persona guanyadora per a l'entrega de premis.</li>
+        </ul>
+
+        <p><strong>3. Destinataris i encarregats del tractament</strong><br />
+          Les dades es tracten amb els següents proveïdors, com a encarregats del tractament:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Google LLC / Firebase</strong> (autenticació, base de dades i allotjament web).</li>
+          <li><strong>Google Sheets</strong>, a través d'un formulari automatitzat (Apps Script), on es desa una còpia de les dades d'inscripció.</li>
+          <li><strong>OpenStreetMap Foundation (Nominatim)</strong>, per geolocalitzar l'adreça indicada al mapa interactiu.</li>
+          <li><strong>YouTube (Google) / Instagram (Meta)</strong>, en reproduir-se el vídeo inscrit mitjançant el seu reproductor incrustat.</li>
+        </ul>
+        <p>No es cedeixen dades a tercers amb finalitats comercials.</p>
+
+        <p><strong>4. Dades tractades</strong><br />
+          Del compte: nom, email i contrasenya (xifrada per Firebase). Del vídeo inscrit: títol, nom artístic,
+          categoria, ubicació i enllaç, associats al compte de qui l'ha inscrit.</p>
+
+        <p><strong>5. Termini de conservació</strong><br />
+          Les dades es conserven mentre duri el concurs i fins a [termini, p. ex. 3 mesos] després de l'acte de
+          clausura ([mes] de 2026), moment en què es suprimeixen o s'anonimitzen, tret dels vídeos guanyadors si
+          la persona participant en consent la conservació per a la difusió del concurs.</p>
+
+        <p><strong>6. Drets de la persona interessada</strong><br />
+          Podeu exercir els drets d'accés, rectificació, supressió, oposició, limitació del tractament i
+          portabilitat enviant un email a info@dancespace.cat. També teniu dret a presentar una reclamació
+          davant l'Autoritat Catalana de Protecció de Dades (APDCAT) si considereu que el tractament no s'ajusta
+          a la normativa.</p>
+      </div>
     </Card>
   </div>
 );
@@ -1012,7 +1066,7 @@ function Main() {
           <Route path="/video/:id" element={<RouteWithVideoId render={(id) => <GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onModerate={handleAdminModerate} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={id} contestConfig={contestConfig} votedIds={votedIds} />} />} />
           <Route path="/mapa" element={<Suspense fallback={<div className="text-center py-20 text-gray-400">Carregant mapa…</div>}><MapView onBack={() => navigateTo('home')} videos={approvedVideos} /></Suspense>} />
           <Route path="/identificacio" element={<AuthView onLoginSuccess={() => navigate('/participa')} onCancel={() => navigateTo('home')} />} />
-          <Route path="/participa" element={<RequireAuth><UploadView onUploadSuccess={handleUploadSuccess} onCancel={() => navigateTo('home')} user={user} /></RequireAuth>} />
+          <Route path="/participa" element={<RequireAuth><UploadView onUploadSuccess={handleUploadSuccess} onCancel={() => navigateTo('home')} onNavigate={navigateTo} user={user} /></RequireAuth>} />
           <Route path="/enviat" element={<div className="text-center py-20"><div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle size={48} /></div><h2 className="text-4xl font-bold mb-4">Rebut!</h2><p className="text-gray-500 max-w-md mx-auto mb-6">El teu vídeo serà revisat abans d'aparèixer a la galeria pública.</p><div className="flex justify-center gap-4"><Button onClick={() => navigateTo('gallery')}>Galeria</Button></div></div>} />
           <Route path="/premis" element={<PrizesView onBack={() => navigateTo('home')} />} />
           <Route path="/bases" element={<BasesView onBack={() => navigateTo('home')} onNavigate={navigateTo} />} />
