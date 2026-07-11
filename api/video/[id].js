@@ -54,11 +54,20 @@ export default async function handler(req, res) {
     return;
   }
 
+  // DEBUG temporal
+  if (req.query.debug) {
+    res.status(200).json({ queryId: req.query.id, rawUrl: req.url, origin, headers: req.headers });
+    return;
+  }
+
   // 2) Injecta les metaetiquetes del vídeo (si existeix i és llegible).
   try {
-    const docResp = await fetch(
-      `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/videos/${encodeURIComponent(id)}`
-    );
+    const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/videos/${encodeURIComponent(id)}`;
+    const docResp = await fetch(firestoreUrl);
+    if (req.query.debug2) {
+      res.status(200).json({ id, firestoreUrl, docStatus: docResp.status, docBody: await docResp.text() });
+      return;
+    }
     if (docResp.ok) {
       const doc = await docResp.json();
       const f = doc.fields || {};
@@ -83,6 +92,10 @@ export default async function handler(req, res) {
     // Si docResp no és ok (404, etc.), es serveix l'HTML base sense modificar.
   } catch (e) {
     console.error("Error consultant el vídeo per a OG:", e);
+    if (req.query.debug3) {
+      res.status(200).json({ errorMessage: e.message, errorStack: e.stack });
+      return;
+    }
   }
 
   res.setHeader("Cache-Control", "public, max-age=300, s-maxage=600");
