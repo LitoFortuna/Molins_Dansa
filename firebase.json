@@ -8,6 +8,13 @@
         ],
         "rewrites": [
             {
+                "source": "/video/**",
+                "function": {
+                    "functionId": "ogVideo",
+                    "region": "us-central1"
+                }
+            },
+            {
                 "source": "**",
                 "destination": "/index.html"
             }
