@@ -1,13 +1,16 @@
 import { useMemo } from 'react';
-import { Camera, MapPin, Play, Trophy, Calendar, Building2, Store, School, Heart } from 'lucide-react';
+import { Camera, MapPin, Play, Trophy, Calendar, Store, School, Heart } from 'lucide-react';
 import { Button, Card } from '../components/ui';
 import { parseConfigDate, daysUntil } from '../lib/contestConfig';
 import { getYouTubeId } from '../lib/videoUrl';
 import { useI18n } from '../i18n/useI18n';
 
+// L'Ajuntament i la Generalitat tenen logotip institucional real; Comerç
+// Local i Escoles Dansa representen categories senceres (no una sola
+// entitat), així que mantenen una icona.
 const COLLABORATORS = [
-  { icon: Building2, labelKey: 'home.cityCouncil', color: 'text-rose-600 bg-rose-50' },
-  { icon: Building2, labelKey: 'home.generalitat', color: 'text-orange-600 bg-orange-50' },
+  { logo: '/logos/ajuntament.png', labelKey: 'home.cityCouncil' },
+  { logo: '/logos/generalitat.png', labelKey: 'home.generalitat' },
   { icon: Store, labelKey: 'home.localShops', color: 'text-amber-600 bg-amber-50' },
   { icon: School, labelKey: 'home.danceSchools', color: 'text-purple-600 bg-purple-50' },
 ];
@@ -122,8 +125,14 @@ export const HomeView = ({ onNavigate, contestConfig, videos = [] }) => {
         {COLLABORATORS.map((collaborator) => {
           const Icon = collaborator.icon;
           return (
-            <div key={collaborator.labelKey} className="flex flex-col items-center gap-2 bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${collaborator.color}`}><Icon size={24} /></div>
+            <div key={collaborator.labelKey} className="flex flex-col items-center gap-3 bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+              {collaborator.logo ? (
+                <div className="h-12 flex items-center justify-center">
+                  <img src={collaborator.logo} alt={t(collaborator.labelKey)} className="max-h-12 max-w-full object-contain" />
+                </div>
+              ) : (
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${collaborator.color}`}><Icon size={24} /></div>
+              )}
               <span className="text-sm font-bold text-center whitespace-pre-line text-gray-700">{t(collaborator.labelKey)}</span>
             </div>
           );
