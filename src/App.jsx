@@ -23,6 +23,7 @@ import {
 } from "firebase/firestore";
 // Import initialized instances
 import { auth, db } from './firebase';
+import { getYouTubeId } from './lib/videoUrl';
 
 // CONSTANTE ADMIN UID (SEGURIDAD)
 // Intermedi: la comprovació real d'admin viu a firestore.rules (isAdmin()).
@@ -67,13 +68,7 @@ const SEED_VIDEOS = [
 ];
 
 // --- UTILS ---
-const getYouTubeId = (url) => {
-  if (!url || typeof url !== 'string') return null;
-  // Cobreix watch?v=, youtu.be/, shorts/, live/, embed/ i /v/ (id de 11 caràcters).
-  const regExp = /(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|live\/|embed\/|v\/))([\w-]{11})/;
-  const match = url.match(regExp);
-  return match ? match[1] : null;
-};
+// getYouTubeId viu ara a src/lib/videoUrl.js (compartit amb MapView).
 
 // --- CONFIG DEL CONCURS (dates de fases, doc config/concurs) ---
 const parseConfigDate = (isoDate) => {
