@@ -41,6 +41,8 @@ export const ca = {
     daysUntilVoting: 'Queden {{n}} dies per votar!',
     votingClosedBanner: 'La votació ha finalitzat. Gràcies per participar!',
     daysUntilSubmission: "Queden {{n}} dies per inscriure el teu ball!",
+    latestTitle: 'Últimes inscripcions',
+    latestCta: 'Veure-les totes →',
   },
 
   gallery: {

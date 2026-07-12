@@ -41,6 +41,8 @@ export const es = {
     daysUntilVoting: '¡Quedan {{n}} días para votar!',
     votingClosedBanner: 'La votación ha finalizado. ¡Gracias por participar!',
     daysUntilSubmission: '¡Quedan {{n}} días para inscribir tu baile!',
+    latestTitle: 'Últimas inscripciones',
+    latestCta: 'Verlas todas →',
   },
 
   gallery: {

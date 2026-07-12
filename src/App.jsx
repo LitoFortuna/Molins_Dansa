@@ -263,7 +263,7 @@ function Main() {
       <main className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12 flex-grow w-full">
         {notification && <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 z-50"><CheckCircle className="text-green-400" size={20} />{notification}</div>}
         <Routes>
-          <Route path="/" element={<HomeView onNavigate={navigateTo} contestConfig={contestConfig} />} />
+          <Route path="/" element={<HomeView onNavigate={navigateTo} contestConfig={contestConfig} videos={approvedVideos} />} />
           <Route path="/galeria" element={<GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onModerate={handleAdminModerate} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={null} contestConfig={contestConfig} votedIds={votedIds} />} />
           <Route path="/video/:id" element={<RouteWithVideoId render={(id) => <GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onModerate={handleAdminModerate} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={id} contestConfig={contestConfig} votedIds={votedIds} />} />} />
           <Route path="/mapa" element={<Suspense fallback={<div className="text-center py-20 text-gray-400">{t('map.loading')}</div>}><MapView onBack={() => navigateTo('home')} videos={approvedVideos} /></Suspense>} />
