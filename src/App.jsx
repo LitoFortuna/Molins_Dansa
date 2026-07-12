@@ -99,12 +99,17 @@ function Main() {
     };
     initAuth();
     // AUTH LISTENER PARA ADMIN Y USER
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    // L'admin real es determina pel custom claim (veure firestore.rules);
+    // l'UID és només una xarxa de seguretat mentre es completa la migració.
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
-      // CHECK ADMIN STATUS AUTOMATICALLY
-      if (currentUser && currentUser.uid === ADMIN_UID) {
-        setIsAdmin(true);
-      } else {
+      if (!currentUser) { setIsAdmin(false); return; }
+      if (currentUser.uid === ADMIN_UID) { setIsAdmin(true); return; }
+      try {
+        const { claims } = await currentUser.getIdTokenResult();
+        setIsAdmin(claims.admin === true);
+      } catch (e) {
+        console.error("Error comprovant els privilegis d'administrador:", e);
         setIsAdmin(false);
       }
     });

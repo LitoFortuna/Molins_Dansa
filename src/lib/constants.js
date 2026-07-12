@@ -1,6 +1,8 @@
-// CONSTANTE ADMIN UID (SEGURIDAD)
-// Intermedi: la comprovació real d'admin viu a firestore.rules (isAdmin()).
-// Aquí només serveix per mostrar/amagar UI. Objectiu: custom claim `admin`.
+// ADMIN: la comprovació real viu a firestore.rules (isAdmin()), que ara
+// accepta el custom claim `admin: true` (veure scripts/set-admin-claim.mjs)
+// o aquest UID com a xarxa de seguretat mentre es completa la migració.
+// Aquí només serveix per mostrar/amagar UI abans que el claim s'hagi
+// confirmat — mai és la font de veritat de seguretat.
 export const ADMIN_UID = 'go7iiu9IjRTuMsnHgEVM5ho8IZD2';
 
 // Noms de vista (que fan servir les vistes via onNavigate) → rutes reals.

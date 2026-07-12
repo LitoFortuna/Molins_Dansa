@@ -28,6 +28,10 @@ dist-ssr
 # Firebase
 .firebase/
 
+# Claus de compte de servei (mai al repositori — veure scripts/set-admin-claim.mjs)
+serviceAccountKey.json
+*-firebase-adminsdk-*.json
+
 .vercel
 .env*
 

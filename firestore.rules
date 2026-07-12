@@ -16,10 +16,13 @@ rules_version = '2';
 //     l'admin (verificat al servidor)
 //   - config/concurs: dates del concurs, lectura pública, escriptura admin
 //
+// Admin: custom claim `admin: true` (establert amb scripts/set-admin-claim.mjs),
+// amb l'UID original com a xarxa de seguretat mentre es completa la migració.
+// Un cop el claim estigui confirmat per a tots els admins, es pot treure l'UID.
+//
 // PENDENT (següent pas, requereix Cloud Functions):
 //   - un vot per usuari i vídeo (subcol·lecció videos/{id}/votes/{uid})
 //   - recompte de vots calculat al servidor (el client deixa d'escriure `votes`)
-//   - admin via custom claim en lloc de l'UID fix d'aquí sota
 //
 // Desplegar amb:  firebase deploy --only firestore:rules
 // Provar abans amb l'emulador:  firebase emulators:start
@@ -32,10 +35,11 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Intermedi: admin per UID. Objectiu: request.auth.token.admin == true
+    // Admin: custom claim (nou) o UID fix (xarxa de seguretat temporal).
     function isAdmin() {
       return isSignedIn()
-        && request.auth.uid == 'go7iiu9IjRTuMsnHgEVM5ho8IZD2';
+        && (request.auth.token.admin == true
+            || request.auth.uid == 'go7iiu9IjRTuMsnHgEVM5ho8IZD2');
     }
 
     // Validació d'un vídeo nou creat des del client de participants.
