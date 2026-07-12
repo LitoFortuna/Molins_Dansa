@@ -19,6 +19,7 @@ import {
   setDoc
 } from "firebase/firestore";
 import { auth, db } from './firebase';
+import { trackEvent } from './lib/analytics';
 
 import { ADMIN_UID, VIEW_PATHS, SEED_VIDEOS } from './lib/constants';
 import { AuthView } from './features/auth/AuthView';
@@ -182,6 +183,7 @@ function Main() {
 
     try {
       await updateDoc(doc(db, 'videos', id), { votes: video.votes + points });
+      trackEvent('vote', { video_id: id, points });
       setNotification(t('notifications.voteRegistered', { n: points }));
       setTimeout(() => setNotification(null), 2000);
     } catch (err) {
@@ -194,8 +196,16 @@ function Main() {
   const handleShare = async (video) => {
     const url = `${window.location.origin}/video/${video.id}`;
     const shareData = { title: video.title, text: t('notifications.shareText', { title: video.title }), url };
-    if (navigator.share) { try { await navigator.share(shareData); } catch { /* compartir cancel·lat per l'usuari */ } }
-    else { navigator.clipboard.writeText(`${shareData.text} ${url}`); setNotification(t('notifications.linkCopied')); setTimeout(() => setNotification(null), 3000); }
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        trackEvent('share', { method: 'native', content_type: 'video', item_id: video.id });
+      } catch { /* compartir cancel·lat per l'usuari */ }
+    } else {
+      navigator.clipboard.writeText(`${shareData.text} ${url}`);
+      trackEvent('share', { method: 'clipboard', content_type: 'video', item_id: video.id });
+      setNotification(t('notifications.linkCopied')); setTimeout(() => setNotification(null), 3000);
+    }
   };
   const handleAdminUpdateVotes = async (id, newVotes) => {
     try { await updateDoc(doc(db, 'videos', id), { votes: Math.max(0, newVotes) }); }
@@ -208,7 +218,10 @@ function Main() {
     }
   };
   const handleAdminModerate = async (id, status) => {
-    try { await updateDoc(doc(db, 'videos', id), { status }); }
+    try {
+      await updateDoc(doc(db, 'videos', id), { status });
+      trackEvent('moderate_action', { video_id: id, status });
+    }
     catch (err) { console.error(err); setNotification(t('notifications.errorModerating', { msg: err.message })); setTimeout(() => setNotification(null), 3000); }
   };
   const handleSaveConfig = async (dates) => {

@@ -27,6 +27,7 @@ export const PrivacyView = ({ onBack }) => {
           <li><strong>{t('privacy.s3Item2Bold')}</strong>{t('privacy.s3Item2')}</li>
           <li><strong>{t('privacy.s3Item3Bold')}</strong>{t('privacy.s3Item3')}</li>
           <li><strong>{t('privacy.s3Item4Bold')}</strong>{t('privacy.s3Item4')}</li>
+          <li><strong>{t('privacy.s3Item5Bold')}</strong>{t('privacy.s3Item5')}</li>
         </ul>
         <p>{t('privacy.s3NoCommercial')}</p>
 

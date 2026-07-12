@@ -5,12 +5,15 @@ import { VideoPlayer } from './VideoPlayer';
 import { StatusBadge } from './StatusBadge';
 import { parseConfigDate } from '../../lib/contestConfig';
 import { categoryLabelKey } from '../../lib/categories';
+import { trackEvent } from '../../lib/analytics';
 import { useI18n } from '../../i18n/useI18n';
 
 export const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, onDelete, onModerate, loading, onShare, user, onNavigate, highlightId, contestConfig, votedIds = new Set() }) => {
   const { t } = useI18n();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('Tots');
+
+  useEffect(() => { trackEvent('view_gallery'); }, []);
 
   // Determinar si el vot es "Premium" o "Bàsic"
   const isPremiumVoter = user && !user.isAnonymous;

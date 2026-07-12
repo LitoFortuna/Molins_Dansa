@@ -6,6 +6,7 @@ import {
   updateProfile
 } from "firebase/auth";
 import { auth } from '../../firebase';
+import { trackEvent } from '../../lib/analytics';
 import { Button, Card } from '../../components/ui';
 import { useI18n } from '../../i18n/useI18n';
 
@@ -30,6 +31,7 @@ export const AuthView = ({ onLoginSuccess, onCancel }) => {
         if (!acceptTerms) throw new Error(t('auth.errAcceptTerms'));
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName: name });
+        trackEvent('sign_up', { method: 'password' });
       } else {
         await signInWithEmailAndPassword(auth, email, password);
       }

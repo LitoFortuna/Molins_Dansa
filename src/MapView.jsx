@@ -8,6 +8,7 @@ import L from 'leaflet';
 import { MapPin, Heart, Play, LocateFixed, Maximize2, Loader2, Users } from 'lucide-react';
 import { getYouTubeId } from './lib/videoUrl';
 import { categoryLabelKey } from './lib/categories';
+import { trackEvent } from './lib/analytics';
 import { useI18n } from './i18n/useI18n';
 
 // Coordenades centrals de Molins de Rei
@@ -290,6 +291,8 @@ const MapView = ({ onBack, videos = [] }) => {
   const markerRefs = useRef({});
   const clusterRef = useRef(null);
   const { resolved, pending } = useGeocodedLocations(videos);
+
+  useEffect(() => { trackEvent('view_map'); }, []);
 
   const openVideo = useCallback((id) => navigate(`/video/${id}`), [navigate]);
 

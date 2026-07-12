@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { MapPin } from 'lucide-react';
 import { collection, addDoc } from "firebase/firestore";
 import { db } from '../../firebase';
+import { trackEvent } from '../../lib/analytics';
 import { Button, Card } from '../../components/ui';
 import { useI18n } from '../../i18n/useI18n';
 
@@ -18,6 +19,7 @@ export const UploadView = ({ onUploadSuccess, onCancel, onNavigate, user }) => {
       // SIMPLIFIED PATH: Just 'videos' implies root collection
       const newVideo = { ...formData, userId: user.uid, votes: 0, thumbnail: 'bg-gray-300', createdAt: Date.now(), status: 'pendent' };
       const docRef = await addDoc(collection(db, 'videos'), newVideo);
+      trackEvent('video_submit', { category: formData.category });
 
       // --- GOOGLE SHEETS INTEGRATION ---
       try {

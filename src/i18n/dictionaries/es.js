@@ -177,6 +177,8 @@ export const es = {
     s3Item3: ', para geolocalizar la dirección indicada en el mapa interactivo.',
     s3Item4Bold: 'YouTube (Google) / Instagram (Meta)',
     s3Item4: ', al reproducirse el vídeo inscrito mediante su reproductor incrustado.',
+    s3Item5Bold: 'Google Analytics (Firebase)',
+    s3Item5: ', para obtener estadísticas de uso agregadas y anonimizadas de la plataforma (páginas visitadas, votos, inscripciones). No se usa para elaborar perfiles individuales ni con fines publicitarios.',
     s3NoCommercial: 'No se ceden datos a terceros con fines comerciales.',
     s4Title: '4. Datos tratados',
     s4Text: 'De la cuenta: nombre, email y contraseña (cifrada por Firebase). Del vídeo inscrito: título, nombre artístico, categoría, ubicación y enlace, asociados a la cuenta de quien lo ha inscrito.',

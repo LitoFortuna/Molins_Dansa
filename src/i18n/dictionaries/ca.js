@@ -177,6 +177,8 @@ export const ca = {
     s3Item3: ', per geolocalitzar l\'adreça indicada al mapa interactiu.',
     s3Item4Bold: 'YouTube (Google) / Instagram (Meta)',
     s3Item4: ', en reproduir-se el vídeo inscrit mitjançant el seu reproductor incrustat.',
+    s3Item5Bold: 'Google Analytics (Firebase)',
+    s3Item5: ', per obtenir estadístiques d\'ús agregades i anonimitzades de la plataforma (pàgines visitades, vots, inscripcions). No s\'utilitza per elaborar perfils individuals ni amb finalitats publicitàries.',
     s3NoCommercial: 'No es cedeixen dades a tercers amb finalitats comercials.',
     s4Title: '4. Dades tractades',
     s4Text: "Del compte: nom, email i contrasenya (xifrada per Firebase). Del vídeo inscrit: títol, nom artístic, categoria, ubicació i enllaç, associats al compte de qui l'ha inscrit.",
