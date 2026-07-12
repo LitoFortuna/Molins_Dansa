@@ -21,7 +21,6 @@ import {
 import { auth, db } from './firebase';
 
 import { ADMIN_UID, VIEW_PATHS, SEED_VIDEOS } from './lib/constants';
-import { Button } from './components/ui';
 import { AuthView } from './features/auth/AuthView';
 import { UploadView } from './features/upload/UploadView';
 import { GalleryView } from './features/videos/GalleryView';
@@ -30,8 +29,11 @@ import { PrizesView } from './pages/PrizesView';
 import { BasesView } from './pages/BasesView';
 import { PrivacyView } from './pages/PrivacyView';
 import { SchoolsView } from './pages/SchoolsView';
+import { SuccessView } from './pages/SuccessView';
 import { Navbar } from './layout/Navbar';
 import { Footer } from './layout/Footer';
+import { I18nProvider } from './i18n/I18nContext';
+import { useI18n } from './i18n/useI18n';
 
 // --- MAP VIEW ---
 // Carregat de forma diferida: Leaflet + markercluster (~150 KB) queden fora del
@@ -59,15 +61,18 @@ function RouteWithVideoId({ render }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <ScrollToTop />
-      <Main />
-    </BrowserRouter>
+    <I18nProvider>
+      <BrowserRouter>
+        <ScrollToTop />
+        <Main />
+      </BrowserRouter>
+    </I18nProvider>
   );
 }
 
 function Main() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [videos, setVideos] = useState([]);
   const [notification, setNotification] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -108,6 +113,8 @@ function Main() {
   // Lectura pública (firestore.rules: allow read: if true), independent de
   // l'auth: si signInAnonymously falla, la galeria ha de carregar igualment
   // en lloc de quedar-se "Carregant vídeos..." per sempre.
+  // Deps buides a propòsit: és una subscripció d'un sol cop al muntar, no
+  // s'ha de re-subscriure a Firestore cada cop que canviï l'idioma (`t`).
   useEffect(() => {
     const q = query(collection(db, 'videos'));
     const unsubscribe = onSnapshot(
@@ -120,11 +127,12 @@ function Main() {
       (err) => {
         console.error("Error carregant els vídeos:", err);
         setLoading(false);
-        setNotification("Error carregant els vídeos: " + err.message);
+        setNotification(t('notifications.errorLoadingVideos', { msg: err.message }));
         setTimeout(() => setNotification(null), 5000);
       }
     );
     return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Config del concurs (dates de fases): lectura pública, no depèn de l'auth.
@@ -146,12 +154,12 @@ function Main() {
   const seedDatabase = async () => {
     if (!user) return;
     try {
-      setNotification("Sembrant base de dades...");
+      setNotification(t('notifications.seeding'));
       for (const video of SEED_VIDEOS) { await addDoc(collection(db, 'videos'), { ...video, userId: 'system' }); }
-      setNotification("Dades d'exemple carregades!"); setTimeout(() => setNotification(null), 3000);
+      setNotification(t('notifications.seeded')); setTimeout(() => setNotification(null), 3000);
     } catch (e) {
       console.error(e);
-      setNotification("Error: " + e.message);
+      setNotification(t('notifications.errorPrefix', { msg: e.message }));
     }
   };
 
@@ -174,54 +182,54 @@ function Main() {
 
     try {
       await updateDoc(doc(db, 'videos', id), { votes: video.votes + points });
-      setNotification(`Vot registrat (+${points} punts)!`);
+      setNotification(t('notifications.voteRegistered', { n: points }));
       setTimeout(() => setNotification(null), 2000);
     } catch (err) {
       console.error(err);
       setVotedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
-      setNotification("Error: " + err.message);
+      setNotification(t('notifications.errorPrefix', { msg: err.message }));
     }
   };
 
   const handleShare = async (video) => {
     const url = `${window.location.origin}/video/${video.id}`;
-    const shareData = { title: video.title, text: `Vota ${video.title} a Molins Dansa!`, url };
+    const shareData = { title: video.title, text: t('notifications.shareText', { title: video.title }), url };
     if (navigator.share) { try { await navigator.share(shareData); } catch { /* compartir cancel·lat per l'usuari */ } }
-    else { navigator.clipboard.writeText(`${shareData.text} ${url}`); setNotification("Enllaç copiat!"); setTimeout(() => setNotification(null), 3000); }
+    else { navigator.clipboard.writeText(`${shareData.text} ${url}`); setNotification(t('notifications.linkCopied')); setTimeout(() => setNotification(null), 3000); }
   };
   const handleAdminUpdateVotes = async (id, newVotes) => {
     try { await updateDoc(doc(db, 'videos', id), { votes: Math.max(0, newVotes) }); }
-    catch (err) { console.error(err); setNotification("Error en actualitzar els vots: " + err.message); setTimeout(() => setNotification(null), 3000); }
+    catch (err) { console.error(err); setNotification(t('notifications.errorUpdatingVotes', { msg: err.message })); setTimeout(() => setNotification(null), 3000); }
   };
   const handleAdminDelete = async (id) => {
-    if (confirm("Eliminar?")) {
+    if (confirm(t('gallery.confirmDelete'))) {
       try { await deleteDoc(doc(db, 'videos', id)); }
-      catch (err) { console.error(err); setNotification("Error en eliminar: " + err.message); setTimeout(() => setNotification(null), 3000); }
+      catch (err) { console.error(err); setNotification(t('notifications.errorDeleting', { msg: err.message })); setTimeout(() => setNotification(null), 3000); }
     }
   };
   const handleAdminModerate = async (id, status) => {
     try { await updateDoc(doc(db, 'videos', id), { status }); }
-    catch (err) { console.error(err); setNotification("Error en moderar: " + err.message); setTimeout(() => setNotification(null), 3000); }
+    catch (err) { console.error(err); setNotification(t('notifications.errorModerating', { msg: err.message })); setTimeout(() => setNotification(null), 3000); }
   };
   const handleSaveConfig = async (dates) => {
     try {
       await setDoc(doc(db, 'config', 'concurs'), dates, { merge: true });
-      setNotification("Dates desades!"); setTimeout(() => setNotification(null), 3000);
+      setNotification(t('notifications.datesSaved')); setTimeout(() => setNotification(null), 3000);
     } catch (err) {
       console.error(err);
-      setNotification("Error en desar les dates: " + err.message); setTimeout(() => setNotification(null), 3000);
+      setNotification(t('notifications.errorSavingDates', { msg: err.message })); setTimeout(() => setNotification(null), 3000);
     }
   };
   const navigateTo = (view) => {
     setMobileMenuOpen(false);
     if (view === 'upload' && (!user || user.isAnonymous)) {
-      setNotification("Registra't primer"); setTimeout(() => setNotification(null), 3000);
+      setNotification(t('notifications.registerFirst')); setTimeout(() => setNotification(null), 3000);
       navigate(VIEW_PATHS.auth);
       return;
     }
     navigate(VIEW_PATHS[view] || '/');
   };
-  const handleLogout = async () => { setMobileMenuOpen(false); await signOut(auth); setNotification("Adéu!"); navigate('/'); setTimeout(() => setNotification(null), 3000); await signInAnonymously(auth); };
+  const handleLogout = async () => { setMobileMenuOpen(false); await signOut(auth); setNotification(t('notifications.goodbye')); navigate('/'); setTimeout(() => setNotification(null), 3000); await signInAnonymously(auth); };
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-gray-800 flex flex-col">
@@ -240,10 +248,10 @@ function Main() {
           <Route path="/" element={<HomeView onNavigate={navigateTo} contestConfig={contestConfig} />} />
           <Route path="/galeria" element={<GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onModerate={handleAdminModerate} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={null} contestConfig={contestConfig} votedIds={votedIds} />} />
           <Route path="/video/:id" element={<RouteWithVideoId render={(id) => <GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onModerate={handleAdminModerate} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={id} contestConfig={contestConfig} votedIds={votedIds} />} />} />
-          <Route path="/mapa" element={<Suspense fallback={<div className="text-center py-20 text-gray-400">Carregant mapa…</div>}><MapView onBack={() => navigateTo('home')} videos={approvedVideos} /></Suspense>} />
+          <Route path="/mapa" element={<Suspense fallback={<div className="text-center py-20 text-gray-400">{t('map.loading')}</div>}><MapView onBack={() => navigateTo('home')} videos={approvedVideos} /></Suspense>} />
           <Route path="/identificacio" element={<AuthView onLoginSuccess={() => navigate('/participa')} onCancel={() => navigateTo('home')} />} />
           <Route path="/participa" element={<RequireAuth><UploadView onUploadSuccess={handleUploadSuccess} onCancel={() => navigateTo('home')} onNavigate={navigateTo} user={user} /></RequireAuth>} />
-          <Route path="/enviat" element={<div className="text-center py-20"><div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle size={48} /></div><h2 className="text-4xl font-bold mb-4">Rebut!</h2><p className="text-gray-500 max-w-md mx-auto mb-6">El teu vídeo serà revisat abans d'aparèixer a la galeria pública.</p><div className="flex justify-center gap-4"><Button onClick={() => navigateTo('gallery')}>Galeria</Button></div></div>} />
+          <Route path="/enviat" element={<SuccessView onNavigate={navigateTo} />} />
           <Route path="/premis" element={<PrizesView onBack={() => navigateTo('home')} />} />
           <Route path="/bases" element={<BasesView onBack={() => navigateTo('home')} onNavigate={navigateTo} />} />
           <Route path="/privacitat" element={<PrivacyView onBack={() => navigateTo('home')} />} />

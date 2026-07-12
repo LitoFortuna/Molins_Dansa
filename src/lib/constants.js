@@ -12,7 +12,7 @@ export const VIEW_PATHS = {
 
 // --- MODERACIÓ: estat d'un vídeo ---
 // Sense status (vídeos anteriors a aquesta funcionalitat) es tracta com 'aprovat'.
-export const STATUS_LABELS = { pendent: 'Pendent', aprovat: 'Aprovat', rebutjat: 'Rebutjat' };
+// Les etiquetes traduïdes viuen a src/i18n/dictionaries/{ca,es}.js (admin.status*).
 export const STATUS_COLORS = {
   pendent: 'bg-amber-100 text-amber-800',
   aprovat: 'bg-green-100 text-green-800',

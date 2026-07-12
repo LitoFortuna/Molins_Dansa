@@ -4,8 +4,11 @@ import { Button, Card, Badge } from '../../components/ui';
 import { VideoPlayer } from './VideoPlayer';
 import { StatusBadge } from './StatusBadge';
 import { parseConfigDate } from '../../lib/contestConfig';
+import { categoryLabelKey } from '../../lib/categories';
+import { useI18n } from '../../i18n/useI18n';
 
 export const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, onDelete, onModerate, loading, onShare, user, onNavigate, highlightId, contestConfig, votedIds = new Set() }) => {
+  const { t } = useI18n();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('Tots');
 
@@ -46,7 +49,7 @@ export const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, on
   }, [highlightId, filteredVideos]);
 
   const exportToCSV = () => {
-    const headers = "ID,Titol,Autor,Categoria,Lloc,Vots,Enllaç,Data\n";
+    const headers = t('gallery.csvHeaders') + "\n";
     const rows = videos.map(v =>
       `${v.id},"${v.title}","${v.author}","${v.category}","${v.location}",${v.votes},"${v.url}",${new Date(v.createdAt).toLocaleDateString()}`
     ).join("\n");
@@ -54,7 +57,7 @@ export const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, on
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", "molins_dansa_participants.csv");
+    link.setAttribute("download", t('gallery.csvFilename'));
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -64,11 +67,11 @@ export const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, on
     <div className="animate-in fade-in duration-500">
       <div className="flex flex-col gap-6 mb-8">
         <div className="flex justify-between items-center">
-          <button onClick={onBack} className="text-sm text-gray-500 hover:text-rose-600">← Inici</button>
+          <button onClick={onBack} className="text-sm text-gray-500 hover:text-rose-600">{t('gallery.back')}</button>
           <div className="flex items-center gap-3">
             {isAdmin && (
               <Button variant="outline" onClick={exportToCSV} className="text-xs px-3 py-1">
-                <Download size={14} /> Exportar Dades
+                <Download size={14} /> {t('gallery.exportData')}
               </Button>
             )}
           </div>
@@ -77,13 +80,13 @@ export const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, on
         <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
           <div>
             <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              Galeria
-              {isAdmin && <span className="bg-red-600 text-white text-xs px-2 py-1 rounded font-bold uppercase">Admin</span>}
+              {t('gallery.title')}
+              {isAdmin && <span className="bg-red-600 text-white text-xs px-2 py-1 rounded font-bold uppercase">{t('gallery.admin')}</span>}
               {isAdmin && pendingCount > 0 && (
-                <span className="bg-amber-500 text-white text-xs px-2 py-1 rounded-full font-bold">{pendingCount} pendents</span>
+                <span className="bg-amber-500 text-white text-xs px-2 py-1 rounded-full font-bold">{t('gallery.pendingCount', { n: pendingCount })}</span>
               )}
             </h2>
-            <p className="text-gray-500">Explora {filteredVideos.length} actuacions</p>
+            <p className="text-gray-500">{t('gallery.exploreCount', { n: filteredVideos.length })}</p>
           </div>
         </div>
 
@@ -93,32 +96,35 @@ export const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, on
             <div className="flex items-center gap-3">
               <div className="bg-amber-100 p-2 rounded-full text-amber-600"><Star size={20} fill="currentColor" /></div>
               <div>
-                <h4 className="font-bold text-amber-900">Vols que el teu vot valgui x5?</h4>
-                <p className="text-sm text-amber-700">Els usuaris registrats tenen més poder de vot.</p>
+                <h4 className="font-bold text-amber-900">{t('gallery.x5Title')}</h4>
+                <p className="text-sm text-amber-700">{t('gallery.x5Text')}</p>
               </div>
             </div>
-            <Button variant="gold" onClick={() => onNavigate('auth')} className="text-sm">Registrar-me ara</Button>
+            <Button variant="gold" onClick={() => onNavigate('auth')} className="text-sm">{t('gallery.registerNow')}</Button>
           </div>
         )}
 
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4">
           <div className="relative flex-grow">
             <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-            <input type="text" placeholder="Cercar..." className="w-full pl-10 px-4 py-2 border border-gray-200 rounded-lg outline-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            <input type="text" placeholder={t('gallery.searchPlaceholder')} className="w-full pl-10 px-4 py-2 border border-gray-200 rounded-lg outline-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
           <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
             <select className="px-4 py-2 border border-gray-200 rounded-lg bg-white outline-none" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
-              <option value="Tots">Totes les Categories</option><option value="Individual">Individual</option><option value="Grup">Grup</option><option value="Escola de Dansa">Escoles</option>
+              <option value="Tots">{t('gallery.allCategories')}</option>
+              <option value="Individual">{t('gallery.categoryIndividual')}</option>
+              <option value="Grup">{t('gallery.categoryGroup')}</option>
+              <option value="Escola de Dansa">{t('gallery.categorySchool')}</option>
             </select>
           </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="text-center py-20 text-gray-400">Carregant vídeos...</div>
+        <div className="text-center py-20 text-gray-400">{t('gallery.loading')}</div>
       ) : filteredVideos.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-gray-100">
-          <p className="text-gray-500 text-lg">No s'han trobat vídeos.</p>
+          <p className="text-gray-500 text-lg">{t('gallery.empty')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -126,7 +132,7 @@ export const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, on
             <Card key={video.id} id={`video-${video.id}`} className={`group hover:shadow-2xl transition-all duration-300 border ${video.id === highlightId ? 'ring-2 ring-rose-500 ring-offset-2' : isAdmin ? 'border-red-200 ring-1 ring-red-100' : 'border-gray-100'}`}>
               <VideoPlayer url={video.url} thumbnail={video.thumbnail} title={video.title} />
               <div className="relative">
-                <div className="absolute -top-10 right-3 z-20"><Badge color="bg-black/50 text-white backdrop-blur-md">{video.category}</Badge></div>
+                <div className="absolute -top-10 right-3 z-20"><Badge color="bg-black/50 text-white backdrop-blur-md">{categoryLabelKey(video.category) ? t(categoryLabelKey(video.category)) : video.category}</Badge></div>
                 {idx < 3 && <div className="absolute -top-10 left-3 bg-yellow-400 text-yellow-900 w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-md border-2 border-white z-20">#{idx + 1}</div>}
               </div>
               <div className="p-5">
@@ -143,12 +149,12 @@ export const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, on
 
                 {isAdmin ? (
                   <div className="bg-red-50 p-3 rounded-lg border border-red-100 space-y-2">
-                    <div className="flex items-center justify-between"><label className="text-xs font-bold text-red-800 uppercase">Admin</label><button onClick={() => onDelete(video.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16} /></button></div>
+                    <div className="flex items-center justify-between"><label className="text-xs font-bold text-red-800 uppercase">{t('gallery.admin')}</label><button onClick={() => onDelete(video.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16} /></button></div>
                     <div className="flex items-center justify-between gap-2">
                       <StatusBadge status={video.status} />
                       <div className="flex gap-1">
-                        <button onClick={() => onModerate(video.id, 'aprovat')} disabled={video.status === 'aprovat'} className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 disabled:opacity-40 disabled:cursor-not-allowed font-semibold">Aprovar</button>
-                        <button onClick={() => onModerate(video.id, 'rebutjat')} disabled={video.status === 'rebutjat'} className="text-xs px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed font-semibold">Rebutjar</button>
+                        <button onClick={() => onModerate(video.id, 'aprovat')} disabled={video.status === 'aprovat'} className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 disabled:opacity-40 disabled:cursor-not-allowed font-semibold">{t('gallery.approve')}</button>
+                        <button onClick={() => onModerate(video.id, 'rebutjat')} disabled={video.status === 'rebutjat'} className="text-xs px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed font-semibold">{t('gallery.reject')}</button>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -159,19 +165,19 @@ export const GalleryView = ({ videos, onVote, onBack, isAdmin, onUpdateVotes, on
                   </div>
                 ) : (
                   <div className="flex items-center justify-between border-t border-gray-100 pt-4 gap-2">
-                    <div className="text-gray-500 text-sm"><span className="font-bold text-gray-900 text-lg">{video.votes}</span> vots</div>
+                    <div className="text-gray-500 text-sm"><span className="font-bold text-gray-900 text-lg">{video.votes}</span> {t('gallery.votes')}</div>
                     <div className="flex gap-2">
-                      <button onClick={() => onShare(video)} className="p-2 bg-gray-50 hover:bg-blue-50 text-gray-500 hover:text-blue-600 rounded-full transition-colors" title="Compartir"><Share2 size={18} /></button>
+                      <button onClick={() => onShare(video)} className="p-2 bg-gray-50 hover:bg-blue-50 text-gray-500 hover:text-blue-600 rounded-full transition-colors" title={t('gallery.share')}><Share2 size={18} /></button>
                       {votingClosed ? (
-                        <span className="text-xs text-gray-400 font-medium px-3 py-2 whitespace-nowrap">Votació tancada</span>
+                        <span className="text-xs text-gray-400 font-medium px-3 py-2 whitespace-nowrap">{t('gallery.votingClosed')}</span>
                       ) : votedIds.has(video.id) ? (
                         <span className="flex items-center gap-2 text-xs text-green-600 font-semibold px-3 py-2 whitespace-nowrap">
-                          <CheckCircle size={16} /> Vot registrat
+                          <CheckCircle size={16} /> {t('gallery.voteRegistered')}
                         </span>
                       ) : (
                         <button onClick={() => onVote(video.id)} className={`flex items-center gap-2 px-4 py-2 ${isPremiumVoter ? 'bg-amber-100 text-amber-900 hover:bg-amber-200' : 'bg-gray-50 text-gray-600 hover:bg-rose-50 hover:text-rose-600'} rounded-full transition-colors font-semibold group-active:scale-95`}>
                           <Heart size={18} className={isPremiumVoter ? "fill-amber-600 text-amber-600" : "group-hover:fill-rose-600"} />
-                          Votar (+{voteValue})
+                          {t('gallery.voteButton', { n: voteValue })}
                         </button>
                       )}
                     </div>

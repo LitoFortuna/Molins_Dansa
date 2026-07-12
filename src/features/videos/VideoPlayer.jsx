@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Play, Link as LinkIcon, X } from 'lucide-react';
 import { getYouTubeId } from '../../lib/videoUrl';
+import { useI18n } from '../../i18n/useI18n';
 
 export const VideoPlayer = ({ url, thumbnail, title }) => {
+  const { t } = useI18n();
   const [isPlaying, setIsPlaying] = useState(false);
   const youtubeId = getYouTubeId(url);
 
@@ -67,7 +69,7 @@ export const VideoPlayer = ({ url, thumbnail, title }) => {
 
       {!youtubeId && (
         <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-white text-xs bg-black/50 px-2 py-1 rounded">
-          Obrir enllaç extern
+          {t('gallery.externalLink')}
         </div>
       )}
     </div>

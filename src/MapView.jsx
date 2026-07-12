@@ -7,6 +7,8 @@ import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import { MapPin, Heart, Play, LocateFixed, Maximize2, Loader2, Users } from 'lucide-react';
 import { getYouTubeId } from './lib/videoUrl';
+import { categoryLabelKey } from './lib/categories';
+import { useI18n } from './i18n/useI18n';
 
 // Coordenades centrals de Molins de Rei
 const MOLINS_COORDS = [41.408, 2.015];
@@ -152,10 +154,15 @@ const useStopMapPropagation = () => {
 /* --- Controls sobre el mapa ------------------------------------------------ */
 const MapControls = ({ positions }) => {
   const map = useMap();
+  const { t } = useI18n();
   const wrapRef = useStopMapPropagation();
   const layerRef = useRef(null);
   const [locating, setLocating] = useState(false);
 
+  // Deps [map] a propòsit: registra els listeners un sol cop per instància del
+  // mapa. Re-executar-ho en canviar `t` (idioma) tornaria a registrar-los
+  // duplicats; el text del popup "Ets aquí!" pot quedar-se en l'idioma actiu
+  // en el moment del primer muntatge, acceptable per a aquest cas puntual.
   useEffect(() => {
     const onFound = (e) => {
       setLocating(false);
@@ -167,7 +174,7 @@ const MapControls = ({ positions }) => {
         }),
         L.circleMarker(e.latlng, {
           radius: 7, color: '#fff', weight: 2, fillColor: '#22d3ee', fillOpacity: 1,
-        }).bindPopup('Ets aquí!'),
+        }).bindPopup(t('map.youAreHere')),
       ]).addTo(map);
       map.flyTo(e.latlng, 16, { duration: 1 });
     };
@@ -179,6 +186,7 @@ const MapControls = ({ positions }) => {
       map.off('locationerror', onError);
       if (layerRef.current) layerRef.current.remove();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map]);
 
   const handleLocate = () => { setLocating(true); map.locate(); };
@@ -194,10 +202,10 @@ const MapControls = ({ positions }) => {
 
   return (
     <div ref={wrapRef} className="absolute top-20 right-3 z-[1000] flex flex-col gap-2">
-      <button onClick={handleLocate} className={btnCls} aria-label="On soc?" title="On soc?">
+      <button onClick={handleLocate} className={btnCls} aria-label={t('map.findMe')} title={t('map.findMe')}>
         {locating ? <Loader2 size={18} className="animate-spin text-cyan-400" /> : <LocateFixed size={18} className="text-cyan-400" />}
       </button>
-      <button onClick={handleFitAll} className={btnCls} aria-label="Veure totes les actuacions" title="Veure-ho tot">
+      <button onClick={handleFitAll} className={btnCls} aria-label={t('map.fitAll')} title={t('map.fitAll')}>
         <Maximize2 size={18} className="text-rose-400" />
       </button>
     </div>
@@ -207,6 +215,7 @@ const MapControls = ({ positions }) => {
 /* --- Carrusel inferior d'actuacions ---------------------------------------- */
 const VideoCarousel = ({ items, markerRefs, clusterRef, onOpenVideo }) => {
   const map = useMap();
+  const { t } = useI18n();
   const wrapRef = useStopMapPropagation();
 
   const flyToVideo = ({ video, pos }) => {
@@ -239,7 +248,7 @@ const VideoCarousel = ({ items, markerRefs, clusterRef, onOpenVideo }) => {
             <button
               onClick={() => flyToVideo(item)}
               className="relative h-16 w-full bg-gradient-to-br from-rose-900 to-gray-900 block text-left cursor-pointer"
-              aria-label={`Anar a ${item.video.title} al mapa`}
+              aria-label={t('map.goToVideo', { title: item.video.title })}
             >
               {ytId && (
                 <img
@@ -264,7 +273,7 @@ const VideoCarousel = ({ items, markerRefs, clusterRef, onOpenVideo }) => {
                 onClick={() => onOpenVideo(item.video.id)}
                 className="text-[10px] font-bold text-rose-400 hover:text-rose-300 shrink-0"
               >
-                Veure →
+                {t('map.viewMore')}
               </button>
             </div>
           </div>
@@ -277,6 +286,7 @@ const VideoCarousel = ({ items, markerRefs, clusterRef, onOpenVideo }) => {
 /* --- Vista principal -------------------------------------------------------- */
 const MapView = ({ onBack, videos = [] }) => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const markerRefs = useRef({});
   const clusterRef = useRef(null);
   const { resolved, pending } = useGeocodedLocations(videos);
@@ -310,12 +320,12 @@ const MapView = ({ onBack, videos = [] }) => {
         <div className="absolute top-3 left-3 right-3 z-[1000] flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl bg-gray-900/85 border border-white/15 backdrop-blur-md shadow-lg">
           <div className="flex items-center gap-2 min-w-0">
             <MapPin size={18} className="text-rose-500 shrink-0" />
-            <h2 className="font-bold text-sm md:text-base text-white truncate">Mapa de les actuacions</h2>
+            <h2 className="font-bold text-sm md:text-base text-white truncate">{t('map.title')}</h2>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {pending > 0 && (
               <span className="hidden sm:flex items-center gap-1.5 text-[11px] text-cyan-300 font-medium">
-                <Loader2 size={12} className="animate-spin" /> Localitzant… {pending}
+                <Loader2 size={12} className="animate-spin" /> {t('map.locating', { n: pending })}
               </span>
             )}
             <span className="flex items-center gap-1.5 text-[11px] font-semibold text-rose-200 bg-rose-500/20 border border-rose-400/30 px-2.5 py-1 rounded-full">
@@ -379,22 +389,22 @@ const MapView = ({ onBack, videos = [] }) => {
                         </div>
                         {rank != null && rank < 3 && (
                           <span className="absolute top-2 left-2 text-[10px] font-black uppercase tracking-wide text-amber-950 bg-amber-400 px-2 py-0.5 rounded-full shadow">
-                            #{rank + 1} del rànquing
+                            {t('map.rankBadge', { n: rank + 1 })}
                           </span>
                         )}
                       </div>
                       <div className="px-3 py-2.5">
                         <h3 className="font-bold text-sm text-white leading-tight truncate">{video.title}</h3>
-                        <p className="text-[11px] text-gray-400 truncate mt-0.5">{video.author} · {video.category}</p>
+                        <p className="text-[11px] text-gray-400 truncate mt-0.5">{video.author} · {categoryLabelKey(video.category) ? t(categoryLabelKey(video.category)) : video.category}</p>
                         <div className="flex items-center justify-between mt-2.5">
                           <span className="flex items-center gap-1 text-xs font-bold text-rose-300">
-                            <Heart size={12} className="fill-rose-400 text-rose-400" /> {video.votes ?? 0} vots
+                            <Heart size={12} className="fill-rose-400 text-rose-400" /> {video.votes ?? 0} {t('map.votes')}
                           </span>
                           <button
                             onClick={() => openVideo(video.id)}
                             className="text-[11px] font-bold text-white bg-rose-600 hover:bg-rose-500 px-3 py-1.5 rounded-full transition-colors"
                           >
-                            Veure i votar
+                            {t('map.viewAndVote')}
                           </button>
                         </div>
                       </div>
@@ -412,7 +422,7 @@ const MapView = ({ onBack, videos = [] }) => {
         {videos.length === 0 && (
           <div className="absolute inset-0 z-[1001] flex items-center justify-center pointer-events-none">
             <span className="px-4 py-2 rounded-xl bg-gray-900/85 border border-white/15 text-sm text-gray-300 backdrop-blur-md">
-              Encara no hi ha actuacions publicades
+              {t('map.empty')}
             </span>
           </div>
         )}
