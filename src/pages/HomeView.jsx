@@ -125,15 +125,17 @@ export const HomeView = ({ onNavigate, contestConfig, videos = [] }) => {
         {COLLABORATORS.map((collaborator) => {
           const Icon = collaborator.icon;
           return (
-            <div key={collaborator.labelKey} className="flex flex-col items-center gap-3 bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div key={collaborator.labelKey} className="flex flex-col items-center justify-center gap-3 bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
               {collaborator.logo ? (
-                <div className="h-12 flex items-center justify-center">
-                  <img src={collaborator.logo} alt={t(collaborator.labelKey)} className="max-h-12 max-w-full object-contain" />
+                <div className="h-16 flex items-center justify-center">
+                  <img src={collaborator.logo} alt={t(collaborator.labelKey)} className="max-h-16 max-w-full object-contain" />
                 </div>
               ) : (
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${collaborator.color}`}><Icon size={24} /></div>
+                <>
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${collaborator.color}`}><Icon size={24} /></div>
+                  <span className="text-sm font-bold text-center whitespace-pre-line text-gray-700">{t(collaborator.labelKey)}</span>
+                </>
               )}
-              <span className="text-sm font-bold text-center whitespace-pre-line text-gray-700">{t(collaborator.labelKey)}</span>
             </div>
           );
         })}
