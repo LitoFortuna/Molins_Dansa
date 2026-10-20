@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LogIn, UserPlus, Shield, User, Mail, Lock } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -7,7 +7,7 @@ import {
 } from "firebase/auth";
 import { auth } from '../../firebase';
 import { trackEvent } from '../../lib/analytics';
-import { Button, Card } from '../../components/ui';
+import { Button } from '../../components/ui';
 import { useI18n } from '../../i18n/useI18n';
 
 export const AuthView = ({ onLoginSuccess, onCancel }) => {
@@ -47,33 +47,59 @@ export const AuthView = ({ onLoginSuccess, onCancel }) => {
     }
   };
 
+  const tab = (active, label, onSelect) => (
+    <button
+      type="button"
+      aria-pressed={active}
+      className={`tap text-body font-semibold ${active ? 'underline decoration-[3px] underline-offset-[10px]' : 'text-ink-soft hover:text-ink'}`}
+      onClick={onSelect}
+    >
+      {label}
+    </button>
+  );
+
   return (
-    <div className="max-w-md mx-auto animate-in fade-in slide-in-from-bottom-8 duration-500 py-8">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          {isRegistering ? <UserPlus size={32} /> : <LogIn size={32} />}
-        </div>
-        <h2 className="text-3xl font-bold text-gray-900">{isRegistering ? t('auth.createAccount') : t('auth.welcome')}</h2>
-        {isRegistering && <p className="text-rose-600 font-medium mt-2">{t('auth.registerHint')}</p>}
+    <div className="max-w-lg">
+      <h1 className="display text-head">{isRegistering ? t('auth.createAccount') : t('auth.welcome')}</h1>
+      {isRegistering && <p className="mt-4 text-lead font-medium text-brand-deep">{t('auth.registerHint')}</p>}
+
+      <div className="mt-10 flex gap-8">
+        {tab(!isRegistering, t('auth.signIn'), () => { setIsRegistering(false); setError(''); })}
+        {tab(isRegistering, t('auth.signUp'), () => { setIsRegistering(true); setError(''); })}
       </div>
-      <Card className="p-8">
-        <div className="flex border-b border-gray-200 mb-6">
-          <button className={`flex-1 pb-3 text-sm font-semibold transition-colors ${!isRegistering ? 'text-rose-600 border-b-2 border-rose-600' : 'text-gray-400'}`} onClick={() => { setIsRegistering(false); setError(''); }}>{t('auth.signIn')}</button>
-          <button className={`flex-1 pb-3 text-sm font-semibold transition-colors ${isRegistering ? 'text-rose-600 border-b-2 border-rose-600' : 'text-gray-400'}`} onClick={() => { setIsRegistering(true); setError(''); }}>{t('auth.signUp')}</button>
+
+      {error && (
+        <div role="alert" className="mt-6 flex items-start gap-2 bg-brand-deep/10 px-4 py-3 text-body text-brand-deep">
+          <Shield size={18} className="mt-0.5 shrink-0" aria-hidden="true" />{error}
         </div>
-        {error && <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg flex items-start gap-2"><Shield size={16} className="mt-0.5 shrink-0" />{error}</div>}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {isRegistering && (
-            <div className="space-y-4 animate-in fade-in">
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.fullName')}</label><div className="relative"><User className="absolute left-3 top-2.5 text-gray-400" size={18} /><input required={isRegistering} type="text" className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none" placeholder={t('auth.namePlaceholder')} value={name} onChange={(e) => setName(e.target.value)} /></div></div>
-            </div>
-          )}
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.email')}</label><div className="relative"><Mail className="absolute left-3 top-2.5 text-gray-400" size={18} /><input required type="email" className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none" placeholder={t('auth.emailPlaceholder')} value={email} onChange={(e) => setEmail(e.target.value)} /></div></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.password')}</label><div className="relative"><Lock className="absolute left-3 top-2.5 text-gray-400" size={18} /><input required type="password" className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} /></div></div>
-          {isRegistering && (<div className="flex items-start gap-2 pt-2"><input required type="checkbox" id="terms" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} className="mt-1 rounded text-rose-600 focus:ring-rose-500" /><label htmlFor="terms" className="text-sm text-gray-500">{t('auth.acceptTerms')}</label></div>)}
-          <div className="pt-4 flex flex-col gap-3"><Button type="submit" className="w-full justify-center py-3" disabled={isLoading}>{isLoading ? t('auth.processing') : t('auth.submitLogin')}</Button><Button variant="ghost" onClick={onCancel} className="w-full justify-center text-sm font-normal">{t('auth.cancel')}</Button></div>
-        </form>
-      </Card>
+      )}
+
+      <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+        {isRegistering && (
+          <label className="block">
+            <span className="mb-1 block text-small font-semibold">{t('auth.fullName')}</span>
+            <input required type="text" name="name" autoComplete="name" className="field" placeholder={t('auth.namePlaceholder')} value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+        )}
+        <label className="block">
+          <span className="mb-1 block text-small font-semibold">{t('auth.email')}</span>
+          <input required type="email" name="email" autoComplete="email" spellCheck={false} className="field" placeholder={t('auth.emailPlaceholder')} value={email} onChange={(e) => setEmail(e.target.value)} />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-small font-semibold">{t('auth.password')}</span>
+          <input required type="password" name="password" autoComplete={isRegistering ? 'new-password' : 'current-password'} className="field" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
+        </label>
+        {isRegistering && (
+          <label className="flex items-start gap-3 pt-1 text-body">
+            <input required type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} className="mt-1 h-5 w-5 shrink-0 accent-[var(--color-brand-deep)]" />
+            <span className="text-ink-soft">{t('auth.acceptTerms')}</span>
+          </label>
+        )}
+        <div className="flex flex-col gap-3 pt-3 sm:flex-row">
+          <Button type="submit" className="px-8 py-3 text-body" disabled={isLoading}>{isLoading ? t('auth.processing') : t('auth.submitLogin')}</Button>
+          <Button variant="ghost" onClick={onCancel} className="px-8 py-3 text-body font-medium">{t('auth.cancel')}</Button>
+        </div>
+      </form>
     </div>
   );
 };

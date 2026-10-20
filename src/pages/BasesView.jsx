@@ -1,31 +1,34 @@
-import { Trophy } from 'lucide-react';
-import { Button, Card } from '../components/ui';
+import { PageShell } from '../components/PageShell';
+import { Button } from '../components/ui';
 import { useI18n } from '../i18n/useI18n';
 
 export const BasesView = ({ onBack, onNavigate }) => {
   const { t } = useI18n();
-  return (
-  <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto">
-    <button onClick={onBack} className="text-sm text-gray-500 hover:text-rose-600 mb-6 flex items-center gap-1">{t('bases.back')}</button>
-    <Card className="p-8">
-      <h2 className="text-3xl font-bold mb-6">{t('bases.title')}</h2>
-      <div className="prose prose-rose max-w-none text-gray-700 space-y-4">
-        <p><strong>{t('bases.clause1Title')}</strong> {t('bases.clause1Text')}</p>
-        <p><strong>{t('bases.clause2Title')}</strong> {t('bases.clause2Text')}</p>
-        <p><strong>{t('bases.clause3Title')}</strong> {t('bases.clause3Text')}</p>
 
-        <div className="bg-rose-50 border border-rose-100 p-4 rounded-xl my-6">
-          <h3 className="font-bold text-rose-800 mb-2">{t('bases.prizesBoxTitle')}</h3>
-          <p className="mb-4 text-sm">{t('bases.prizesBoxText')}</p>
-          <Button variant="primary" onClick={() => onNavigate('prizes')} className="text-sm w-full md:w-auto">
-            <Trophy size={16} /> {t('bases.prizesBoxButton')}
+  const clause = (n) => (
+    <p key={n}>
+      <strong className="font-semibold">{t(`bases.clause${n}Title`)}</strong> {t(`bases.clause${n}Text`)}
+    </p>
+  );
+
+  return (
+    <PageShell title={t('bases.title')} onBack={onBack} backLabel={t('bases.back')} narrow>
+      <div className="max-w-[65ch] space-y-7 text-body">
+        {clause(1)}
+        {clause(2)}
+        {clause(3)}
+
+        <div className="bg-sun p-6 text-ink md:p-8">
+          <h2 className="display mb-3 text-lead">{t('bases.prizesBoxTitle')}</h2>
+          <p className="mb-6">{t('bases.prizesBoxText')}</p>
+          <Button variant="secondary" onClick={() => onNavigate('prizes')}>
+            {t('bases.prizesBoxButton')}
           </Button>
         </div>
 
-        <p><strong>{t('bases.clause4Title')}</strong> {t('bases.clause4Text')}</p>
-        <p><strong>{t('bases.clause5Title')}</strong> {t('bases.clause5Text')}</p>
+        {clause(4)}
+        {clause(5)}
       </div>
-    </Card>
-  </div>
+    </PageShell>
   );
 };

@@ -1,16 +1,19 @@
+// Primitives del sistema: botons rectangulars i plans (un sol radi a tot el
+// lloc: cap), superfícies que es distingeixen per un esglaó de to, no per
+// ombra ni per vora.
 export const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false, type = 'button' }) => {
-  const baseStyle = "px-4 py-2 rounded-full font-semibold transition-all duration-200 flex items-center justify-center gap-2 transform active:scale-95 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed";
+  const baseStyle = "tap px-5 py-2.5 font-semibold transition-colors duration-150 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed";
   const variants = {
-    primary: "bg-rose-600 text-white hover:bg-rose-700 shadow-lg hover:shadow-rose-500/30",
-    secondary: "bg-white text-rose-600 border-2 border-rose-600 hover:bg-rose-50",
-    outline: "border border-gray-300 text-gray-700 hover:bg-gray-50",
-    danger: "bg-red-100 text-red-600 hover:bg-red-200",
-    ghost: "bg-transparent text-gray-600 hover:bg-gray-100",
-    gold: "bg-amber-400 text-amber-900 hover:bg-amber-500 shadow-lg shadow-amber-200"
+    primary: "bg-brand text-white hover:bg-brand-deep",
+    secondary: "bg-ink text-paper hover:bg-ink-soft",
+    outline: "bg-paper-2 text-ink hover:bg-ink hover:text-paper",
+    danger: "bg-brand-deep/15 text-brand-deep hover:bg-brand-deep hover:text-white",
+    ghost: "bg-transparent text-ink-soft hover:text-ink hover:bg-paper-2",
+    gold: "bg-ink text-sun hover:bg-ink-soft"
   };
   return <button type={type} onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className}`}>{children}</button>;
 };
 
-export const Card = ({ children, className = '', ...props }) => <div className={`bg-white rounded-xl shadow-md overflow-hidden ${className}`} {...props}>{children}</div>;
+export const Card = ({ children, className = '', ...props }) => <div className={`bg-paper-2 overflow-hidden ${className}`} {...props}>{children}</div>;
 
-export const Badge = ({ children, color = 'bg-gray-100 text-gray-800' }) => <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${color}`}>{children}</span>;
+export const Badge = ({ children, color = 'bg-paper-2 text-ink' }) => <span className={`inline-block px-2.5 py-1 text-small font-semibold ${color}`}>{children}</span>;

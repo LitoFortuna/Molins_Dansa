@@ -10,7 +10,7 @@ export const VideoPlayer = ({ url, thumbnail, title }) => {
 
   if (isPlaying && youtubeId) {
     return (
-      <div className="relative aspect-video bg-black">
+      <div className="relative aspect-video bg-ink">
         <iframe
           width="100%"
           height="100%"
@@ -22,53 +22,58 @@ export const VideoPlayer = ({ url, thumbnail, title }) => {
         ></iframe>
         <button
           onClick={() => setIsPlaying(false)}
-          className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
+          aria-label={t('gallery.close')}
+          className="tap absolute right-0 top-0 flex items-center justify-center bg-ink/85 text-paper transition-colors hover:bg-brand"
         >
-          <X size={16} />
+          <X size={18} />
         </button>
       </div>
     );
   }
 
   return (
-    <div className={`relative aspect-video ${!thumbnail && !youtubeId ? "bg-gray-200" : ""} flex items-center justify-center overflow-hidden bg-gray-200 group`}>
+    <div className="group relative flex aspect-video items-center justify-center overflow-hidden bg-paper-2">
       {/* BACKGROUND THUMBNAIL */}
       {youtubeId ? (
         <img
           src={`https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`}
-          alt={title}
+          alt=""
+          width="480"
+          height="360"
           loading="lazy"
           decoding="async"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover"
         />
       ) : thumbnail && !thumbnail.startsWith('bg-') ? (
-        <img src={thumbnail} alt={title} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={thumbnail} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
       ) : (
-        <div className={`absolute inset-0 w-full h-full ${thumbnail || 'bg-gray-200'}`} />
+        <div className="absolute inset-0 h-full w-full bg-paper-2" />
       )}
 
-      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
+      <div className="absolute inset-0 bg-ink/20 transition-colors group-hover:bg-ink/40" />
 
       {youtubeId ? (
         <button
           onClick={() => setIsPlaying(true)}
-          className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform cursor-pointer backdrop-blur-sm z-10 text-rose-600"
+          aria-label={`${t('gallery.play')}: ${title}`}
+          className="relative z-10 flex h-16 w-16 items-center justify-center bg-brand text-white transition-colors hover:bg-brand-deep"
         >
-          <Play fill="currentColor" size={28} className="ml-1" />
+          <Play fill="currentColor" size={26} className="ml-0.5" />
         </button>
       ) : (
         <a
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform cursor-pointer backdrop-blur-sm z-10 text-rose-600"
+          aria-label={`${t('gallery.externalLink')}: ${title}`}
+          className="relative z-10 flex h-16 w-16 items-center justify-center bg-brand text-white transition-colors hover:bg-brand-deep"
         >
-          <LinkIcon size={28} />
+          <LinkIcon size={26} />
         </a>
       )}
 
       {!youtubeId && (
-        <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-white text-xs bg-black/50 px-2 py-1 rounded">
+        <div className="absolute bottom-0 left-0 bg-ink/85 px-3 py-1.5 text-small text-paper">
           {t('gallery.externalLink')}
         </div>
       )}

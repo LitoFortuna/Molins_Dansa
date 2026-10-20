@@ -1,72 +1,130 @@
-import { MapPin, Shield, LogOut, Menu, X } from 'lucide-react';
+import { Shield, LogOut, Menu, X } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { useI18n } from '../i18n/useI18n';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
+const LINKS = [
+  { view: 'gallery', path: '/galeria', label: 'nav.gallery' },
+  { view: 'map', path: '/mapa', label: 'nav.map' },
+  { view: 'prizes', path: '/premis', label: 'nav.prizes' },
+];
+
+// Marca: el quadrat rosa amb la M (la mateixa de la icona de la PWA).
+const BrandMark = () => (
+  <svg viewBox="0 0 512 512" className="h-8 w-8 shrink-0" aria-hidden="true">
+    <rect width="512" height="512" rx="100" fill="var(--color-brand)" />
+    <path d="M100 400V150l156 150 156-150v250" fill="none" stroke="#fff" strokeWidth="60" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 export const Navbar = ({ user, isAdmin, mobileMenuOpen, setMobileMenuOpen, navigateTo, handleLogout }) => {
   const { t } = useI18n();
+  const { pathname } = useLocation();
+  const loggedIn = user && !user.isAnonymous;
+
+  const linkClass = (path) =>
+    `tap inline-flex items-center text-small font-medium hover:text-brand-deep ${
+      pathname === path ? 'underline decoration-[3px] underline-offset-[10px]' : ''
+    }`;
 
   return (
-  <nav className="bg-white shadow-sm sticky top-0 z-50">
-    <div className="max-w-6xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
-      <div className="flex items-center gap-2 font-black text-2xl tracking-tighter text-rose-600 cursor-pointer" onClick={() => navigateTo('home')}>
-        <div className="w-8 h-8 bg-rose-600 text-white rounded-lg flex items-center justify-center transform -rotate-6">M</div>MOLINS DANSA
-      </div>
-      <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
-        <button onClick={() => navigateTo('home')} className="hover:text-rose-600">{t('nav.home')}</button>
-        <button onClick={() => navigateTo('gallery')} className="hover:text-rose-600">{t('nav.gallery')}</button>
-        <button onClick={() => navigateTo('map')} className="hover:text-amber-600 flex items-center gap-1"><MapPin size={16} /> {t('nav.map')}</button>
-        <LanguageSwitcher />
-        {user && !user.isAnonymous ? (
-          <div className="flex items-center gap-4 border-l pl-4 ml-2">
-            <span className="text-gray-900 font-semibold flex items-center gap-2">
-              {isAdmin && <Shield size={14} className="text-red-500" />}
-              {user.displayName || user.email}
-            </span>
-            <button onClick={handleLogout} className="text-gray-500 hover:text-red-500" aria-label={t('nav.logout')}><LogOut size={18} /></button>
-            <button onClick={() => navigateTo('upload')} className="px-4 py-2 bg-rose-600 text-white rounded-full hover:bg-rose-700 shadow-md">{t('nav.participate')}</button>
-          </div>
-        ) : (<button onClick={() => navigateTo('auth')} className="px-4 py-2 bg-rose-600 text-white rounded-full hover:bg-rose-700 shadow-md">{t('nav.login')}</button>)}
-      </div>
-
-      {/* BOTÓ HAMBURGUESA (només mòbil) */}
-      <div className="md:hidden flex items-center gap-2">
-        <LanguageSwitcher />
-        <button
-          className="text-gray-600 hover:text-rose-600 p-2 -mr-2"
-          onClick={() => setMobileMenuOpen(o => !o)}
-          aria-label={mobileMenuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
-          aria-expanded={mobileMenuOpen}
-          aria-controls="mobile-menu"
+    <header className="sticky top-0 z-50 bg-paper">
+      <nav aria-label={t('nav.main')} className="mx-auto flex h-16 max-w-[1800px] items-center justify-between gap-6 px-5 md:px-6">
+        <a
+          href="/"
+          onClick={(e) => { e.preventDefault(); navigateTo('home'); }}
+          className="display flex items-center gap-3 text-small tracking-[-0.02em]"
         >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
-    </div>
+          <BrandMark />
+          <span translate="no">Molins Dansa</span>
+        </a>
 
-    {/* MENÚ MÒBIL DESPLEGABLE */}
-    {mobileMenuOpen && (
-      <div id="mobile-menu" className="md:hidden border-t border-gray-100 bg-white shadow-lg">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-1 text-gray-700 font-medium">
-          {user && !user.isAnonymous && (
-            <div className="flex items-center gap-2 px-3 py-2 mb-1 text-gray-900 font-semibold border-b border-gray-100">
-              {isAdmin && <Shield size={16} className="text-red-500" />}
-              {user.displayName || user.email}
+        <div className="hidden items-center gap-8 md:flex">
+          {LINKS.map((link) => (
+            <a
+              key={link.view}
+              href={link.path}
+              onClick={(e) => { e.preventDefault(); navigateTo(link.view); }}
+              aria-current={pathname === link.path ? 'page' : undefined}
+              className={linkClass(link.path)}
+            >
+              {t(link.label)}
+            </a>
+          ))}
+          <LanguageSwitcher />
+          {loggedIn ? (
+            <div className="flex items-center gap-4">
+              <span className="flex min-w-0 items-center gap-2 text-small font-medium">
+                {isAdmin && <Shield size={14} className="shrink-0 text-brand-deep" role="img" aria-label="Admin" />}
+                <span className="max-w-[16ch] truncate">{user.displayName || user.email}</span>
+              </span>
+              <button onClick={handleLogout} className="tap flex items-center justify-center hover:text-brand-deep" aria-label={t('nav.logout')}>
+                <LogOut size={18} />
+              </button>
+              <button onClick={() => navigateTo('upload')} className="tap bg-brand px-6 py-2 font-semibold text-white transition-colors hover:bg-brand-deep">
+                {t('nav.participate')}
+              </button>
             </div>
-          )}
-          <button onClick={() => navigateTo('home')} className="text-left px-3 py-2.5 rounded-lg hover:bg-rose-50 hover:text-rose-600">{t('nav.home')}</button>
-          <button onClick={() => navigateTo('gallery')} className="text-left px-3 py-2.5 rounded-lg hover:bg-rose-50 hover:text-rose-600">{t('nav.gallery')}</button>
-          <button onClick={() => navigateTo('map')} className="text-left px-3 py-2.5 rounded-lg hover:bg-amber-50 hover:text-amber-600 flex items-center gap-2"><MapPin size={16} /> {t('nav.map')}</button>
-          {user && !user.isAnonymous ? (
-            <>
-              <button onClick={() => navigateTo('upload')} className="text-left px-3 py-2.5 mt-1 rounded-lg bg-rose-600 text-white hover:bg-rose-700 font-semibold">{t('nav.participate')}</button>
-              <button onClick={handleLogout} className="text-left px-3 py-2.5 rounded-lg hover:bg-gray-100 text-gray-500 flex items-center gap-2"><LogOut size={16} /> {t('nav.logout')}</button>
-            </>
           ) : (
-            <button onClick={() => navigateTo('auth')} className="text-left px-3 py-2.5 mt-1 rounded-lg bg-rose-600 text-white hover:bg-rose-700 font-semibold">{t('nav.login')}</button>
+            <button onClick={() => navigateTo('auth')} className="tap bg-brand px-6 py-2 font-semibold text-white transition-colors hover:bg-brand-deep">
+              {t('nav.login')}
+            </button>
           )}
         </div>
-      </div>
-    )}
-  </nav>
+
+        {/* Botó hamburguesa (només mòbil) */}
+        <div className="flex items-center gap-2 md:hidden">
+          <LanguageSwitcher />
+          <button
+            className="tap flex items-center justify-center"
+            onClick={() => setMobileMenuOpen((o) => !o)}
+            aria-label={mobileMenuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
+          >
+            {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
+          </button>
+        </div>
+      </nav>
+
+      {/* Menú mòbil desplegable */}
+      {mobileMenuOpen && (
+        <div id="mobile-menu" className="bg-paper-2 md:hidden">
+          <div className="flex flex-col px-5 py-4 text-lead font-semibold">
+            {loggedIn && (
+              <div className="flex items-center gap-2 py-3 text-body font-medium text-ink-soft">
+                {isAdmin && <Shield size={16} className="text-brand-deep" aria-label="Admin" />}
+                {user.displayName || user.email}
+              </div>
+            )}
+            {LINKS.map((link) => (
+              <a
+                key={link.view}
+                href={link.path}
+                onClick={(e) => { e.preventDefault(); navigateTo(link.view); }}
+                aria-current={pathname === link.path ? 'page' : undefined}
+                className="tap flex items-center py-3 hover:text-brand-deep"
+              >
+                {t(link.label)}
+              </a>
+            ))}
+            {loggedIn ? (
+              <>
+                <button onClick={() => navigateTo('upload')} className="tap mt-3 bg-brand px-6 py-3 text-left font-semibold text-white hover:bg-brand-deep">
+                  {t('nav.participate')}
+                </button>
+                <button onClick={handleLogout} className="tap flex items-center gap-2 py-3 text-body font-medium text-ink-soft hover:text-ink">
+                  <LogOut size={16} /> {t('nav.logout')}
+                </button>
+              </>
+            ) : (
+              <button onClick={() => navigateTo('auth')} className="tap mt-3 bg-brand px-6 py-3 text-left font-semibold text-white hover:bg-brand-deep">
+                {t('nav.login')}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </header>
   );
 };

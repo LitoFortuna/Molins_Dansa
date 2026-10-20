@@ -1,48 +1,72 @@
 import { Shield, RefreshCw } from 'lucide-react';
 import { AdminConfigPanel } from '../features/admin/AdminConfigPanel';
+import { MillWheel } from '../components/MillWheel';
 import { useI18n } from '../i18n/useI18n';
 
-export const Footer = ({ isAdmin, navigateTo, seedDatabase, contestConfig, configLoaded, handleSaveConfig }) => {
+const LINKS = [
+  { view: 'bases', path: '/bases', label: 'footer.bases' },
+  { view: 'privacy', path: '/privacitat', label: 'footer.privacy' },
+  { view: 'schools', path: '/escoles', label: 'footer.schools' },
+];
+
+// Peu de pàgina: camp invers (tinta), una invitació, els enllaços legals i el
+// nom tallat per la vora inferior. A la portada ocupa tota la pantalla; a la
+// resta de pàgines és més baix (`compact`).
+export const Footer = ({ compact = false, isAdmin, navigateTo, seedDatabase, contestConfig, configLoaded, handleSaveConfig }) => {
   const { t } = useI18n();
 
   return (
-  <footer className="bg-gray-900 text-gray-400 py-12 mt-12">
-    <div className="max-w-6xl mx-auto px-8 grid md:grid-cols-4 gap-8">
-      <div className="col-span-2">
-        <h4 className="text-white font-bold text-lg mb-4">Molins Dansa 2026</h4>
-        <p className="text-sm leading-relaxed max-w-xs">
-          {t('footer.tagline')}
-        </p>
-      </div>
-      <div>
-        <h5 className="text-white font-semibold mb-4">{t('footer.links')}</h5>
-        <ul className="space-y-2 text-sm">
-          <li><button onClick={() => navigateTo('bases')} className="hover:text-white text-left">{t('footer.bases')}</button></li>
-          <li><button onClick={() => navigateTo('privacy')} className="hover:text-white text-left">{t('footer.privacy')}</button></li>
-          <li><button onClick={() => navigateTo('schools')} className="hover:text-white text-left">{t('footer.schools')}</button></li>
+    <footer className={`on-dark relative flex flex-col justify-between overflow-hidden bg-ink px-5 pt-16 text-paper md:px-6 md:pt-24 ${compact ? 'min-h-[64svh]' : 'min-h-svh'}`}>
+      <div className="grid gap-12 md:grid-cols-12">
+        <div className="md:col-span-7">
+          <p className="display max-w-[15ch] text-head leading-[1.04]">{t('footer.invite')}</p>
+          <a
+            href="mailto:info@dancespace.cat"
+            className="tap mt-8 inline-flex items-center bg-brand px-8 py-3 font-semibold text-white transition-colors hover:bg-paper hover:text-brand-deep"
+          >
+            {t('footer.write')}
+          </a>
+        </div>
+
+        <ul className="grid content-start gap-1 text-body md:col-span-5 lg:col-span-3 lg:col-start-10">
+          {LINKS.map((link) => (
+            <li key={link.view}>
+              <a
+                href={link.path}
+                onClick={(e) => { e.preventDefault(); navigateTo(link.view); }}
+                className="tap inline-flex items-center hover:underline hover:decoration-2 hover:underline-offset-4"
+              >
+                {t(link.label)}
+              </a>
+            </li>
+          ))}
         </ul>
       </div>
-      <div>
-        <h5 className="text-white font-semibold mb-4">{t('footer.contact')}</h5>
-        <ul className="space-y-2 text-sm"><li>info@dancespace.cat</li></ul>
-        <div className="mt-8 pt-4 border-t border-gray-800 space-y-4">
 
-          {isAdmin && (
-            <div className="flex items-center gap-2 text-xs text-red-400 font-bold">
-              <Shield size={14} /> {t('footer.adminActive')}
-            </div>
-          )}
+      {isAdmin && (
+        <div className="mt-12 grid max-w-3xl gap-4 bg-paper/10 p-5 text-small">
+          <div className="flex items-center gap-2 font-semibold text-sun">
+            <Shield size={16} aria-hidden="true" /> {t('footer.adminActive')}
+          </div>
+          <button onClick={seedDatabase} className="tap flex items-center gap-2 self-start text-paper hover:underline">
+            <RefreshCw size={14} aria-hidden="true" /> {t('footer.loadSeedData')}
+          </button>
+          <AdminConfigPanel contestConfig={contestConfig} configLoaded={configLoaded} onSave={handleSaveConfig} />
+        </div>
+      )}
 
-          {isAdmin && (
-            <button onClick={seedDatabase} className="flex items-center gap-2 text-xs text-blue-400 hover:text-blue-300 font-mono">
-              <RefreshCw size={12} /> {t('footer.loadSeedData')}
-            </button>
-          )}
-
-          {isAdmin && <AdminConfigPanel contestConfig={contestConfig} configLoaded={configLoaded} onSave={handleSaveConfig} />}
+      <div className="mt-16 md:mt-24">
+        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-1 pb-3 text-small text-paper/80">
+          <span>{t('footer.credits')}</span>
+          <a href="mailto:info@dancespace.cat" className="hover:text-paper hover:underline">info@dancespace.cat</a>
+        </div>
+        {/* El nom torna, enorme i tallat per la vora inferior. */}
+        <div aria-hidden="true" className="display monument pointer-events-none flex-nowrap translate-y-[27%] select-none text-[27vw] md:text-[calc((100vw-3rem)/4.78)]">
+          <span>M</span>
+          <MillWheel className="monument-wheel" />
+          <span>LINS</span>
         </div>
       </div>
-    </div>
-  </footer>
+    </footer>
   );
 };

@@ -315,10 +315,10 @@ const MapView = ({ onBack, videos = [] }) => {
   const positions = useMemo(() => located.map(item => item.pos), [located]);
 
   return (
-    <div className="max-w-6xl mx-auto h-[82vh] flex flex-col">
-      <button onClick={onBack} className="text-sm text-gray-500 hover:text-rose-600 mb-4 flex items-center gap-1">← Tornar</button>
+    <div className="mx-auto flex h-[82vh] max-w-6xl flex-col">
+      <a href="/" onClick={(e) => { e.preventDefault(); onBack(); }} className="tap -ml-2 mb-4 inline-flex items-center self-start px-2 text-small font-medium text-ink-soft hover:text-ink">{t('gallery.back')}</a>
 
-      <div className="relative flex-grow rounded-2xl overflow-hidden shadow-2xl border border-gray-800 bg-gray-950">
+      <div className="relative flex-grow overflow-hidden bg-gray-950">
         {/* Capçalera de vidre sobre el mapa */}
         <div className="absolute top-3 left-3 right-3 z-[1000] flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl bg-gray-900/85 border border-white/15 backdrop-blur-md shadow-lg">
           <div className="flex items-center gap-2 min-w-0">
@@ -345,11 +345,14 @@ const MapView = ({ onBack, videos = [] }) => {
           className="md-map"
           style={{ height: '100%', width: '100%' }}
         >
+          {/* Teselles d'OpenStreetMap (sense clau d'API) oscurides per CSS (.md-tiles).
+              Les de CARTO dark_all ja exigeixen clau i es veien amb la marca
+              "API KEY REQUIRED" a sobre. */}
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            subdomains="abcd"
-            maxZoom={20}
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maxZoom={19}
+            className="md-tiles"
           />
 
           <MapControls positions={positions} />

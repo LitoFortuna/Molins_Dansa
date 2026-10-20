@@ -16,9 +16,9 @@ export const VIEW_PATHS = {
 // Sense status (vídeos anteriors a aquesta funcionalitat) es tracta com 'aprovat'.
 // Les etiquetes traduïdes viuen a src/i18n/dictionaries/{ca,es}.js (admin.status*).
 export const STATUS_COLORS = {
-  pendent: 'bg-amber-100 text-amber-800',
-  aprovat: 'bg-green-100 text-green-800',
-  rebutjat: 'bg-gray-200 text-gray-600'
+  pendent: 'bg-sun text-ink',
+  aprovat: 'bg-ink text-paper',
+  rebutjat: 'bg-brand-deep text-white'
 };
 
 // --- Dades Inicials (Seed Data, només per a l'admin) ---

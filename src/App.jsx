@@ -73,6 +73,7 @@ export default function App() {
 
 function Main() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { t } = useI18n();
   const [videos, setVideos] = useState([]);
   const [notification, setNotification] = useState(null);
@@ -249,8 +250,18 @@ function Main() {
   };
   const handleLogout = async () => { setMobileMenuOpen(false); await signOut(auth); setNotification(t('notifications.goodbye')); navigate('/'); setTimeout(() => setNotification(null), 3000); await signInAnonymously(auth); };
 
+  // La portada va a sang (el monument ocupa tota l'amplada); la resta de
+  // pàgines viuen en una columna amb marges ajustats.
+  const isHome = pathname === '/';
+
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-gray-800 flex flex-col">
+    <div className="flex min-h-screen flex-col bg-paper text-ink">
+      <a
+        href="#contingut"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:bg-ink focus:px-5 focus:py-3 focus:text-paper"
+      >
+        {t('nav.skip')}
+      </a>
       <Navbar
         user={user}
         isAdmin={isAdmin}
@@ -260,13 +271,21 @@ function Main() {
         handleLogout={handleLogout}
       />
 
-      <main className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12 flex-grow w-full">
-        {notification && <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 z-50"><CheckCircle className="text-green-400" size={20} />{notification}</div>}
+      <main
+        id="contingut"
+        tabIndex={-1}
+        className={isHome ? 'w-full flex-grow focus:outline-none' : 'mx-auto w-full max-w-6xl flex-grow px-5 py-10 focus:outline-none md:px-8 md:py-16'}
+      >
+        {notification && (
+          <div role="status" className="fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[100] flex items-center gap-3 bg-ink px-6 py-4 text-paper md:inset-x-auto md:right-6">
+            <CheckCircle className="shrink-0 text-sun" size={20} aria-hidden="true" />{notification}
+          </div>
+        )}
         <Routes>
           <Route path="/" element={<HomeView onNavigate={navigateTo} contestConfig={contestConfig} videos={approvedVideos} />} />
           <Route path="/galeria" element={<GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onModerate={handleAdminModerate} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={null} contestConfig={contestConfig} votedIds={votedIds} />} />
           <Route path="/video/:id" element={<RouteWithVideoId render={(id) => <GalleryView videos={videos} loading={loading} onVote={handleVote} onBack={() => navigateTo('home')} isAdmin={isAdmin} onUpdateVotes={handleAdminUpdateVotes} onDelete={handleAdminDelete} onModerate={handleAdminModerate} onShare={handleShare} user={user} onNavigate={navigateTo} highlightId={id} contestConfig={contestConfig} votedIds={votedIds} />} />} />
-          <Route path="/mapa" element={<Suspense fallback={<div className="text-center py-20 text-gray-400">{t('map.loading')}</div>}><MapView onBack={() => navigateTo('home')} videos={approvedVideos} /></Suspense>} />
+          <Route path="/mapa" element={<Suspense fallback={<div className="py-20 text-center text-ink-soft">{t('map.loading')}</div>}><MapView onBack={() => navigateTo('home')} videos={approvedVideos} /></Suspense>} />
           <Route path="/identificacio" element={<AuthView onLoginSuccess={() => navigate('/participa')} onCancel={() => navigateTo('home')} />} />
           <Route path="/participa" element={<RequireAuth><UploadView onUploadSuccess={handleUploadSuccess} onCancel={() => navigateTo('home')} onNavigate={navigateTo} user={user} /></RequireAuth>} />
           <Route path="/enviat" element={<SuccessView onNavigate={navigateTo} />} />
@@ -279,6 +298,7 @@ function Main() {
       </main>
 
       <Footer
+        compact={!isHome}
         isAdmin={isAdmin}
         navigateTo={navigateTo}
         seedDatabase={seedDatabase}

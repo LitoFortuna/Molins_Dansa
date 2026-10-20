@@ -37,3 +37,6 @@ serviceAccountKey.json
 
 # Claude Code local tooling (preview server config, no és part de l'app)
 .claude/
+
+# Salida local de taste-skill (capturas, direcció, informes)
+.taste-skill/

@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { MapPin } from 'lucide-react';
 import { collection, addDoc } from "firebase/firestore";
 import { db } from '../../firebase';
 import { trackEvent } from '../../lib/analytics';
-import { Button, Card } from '../../components/ui';
+import { PageShell } from '../../components/PageShell';
+import { Button } from '../../components/ui';
 import { useI18n } from '../../i18n/useI18n';
 
 export const UploadView = ({ onUploadSuccess, onCancel, onNavigate, user }) => {
@@ -47,56 +47,61 @@ export const UploadView = ({ onUploadSuccess, onCancel, onNavigate, user }) => {
     }
   };
 
+  const set = (key) => (e) => setFormData({ ...formData, [key]: e.target.value });
+
   return (
-    <div className="max-w-2xl mx-auto py-8">
-      <button onClick={onCancel} className="mb-4">{t('upload.back')}</button>
-      <Card className="p-8">
-        <h2 className="text-3xl font-bold mb-6 text-center">{t('upload.title')}</h2>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <input required className="w-full px-4 py-2 border rounded" placeholder={t('upload.fieldTitle')} value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
-          <div className="grid grid-cols-2 gap-4">
-            <input required className="w-full px-4 py-2 border rounded" placeholder={t('upload.fieldArtistName')} value={formData.author} onChange={e => setFormData({ ...formData, author: e.target.value })} />
-            <select className="w-full px-4 py-2 border rounded" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>
+    <PageShell title={t('upload.title')} onBack={onCancel} backLabel={t('upload.back')} narrow>
+      <form onSubmit={handleSubmit} className="max-w-xl space-y-5">
+        <label className="block">
+          <span className="mb-1 block text-small font-semibold">{t('upload.fieldTitle')}</span>
+          <input required name="title" autoComplete="off" className="field" value={formData.title} onChange={set('title')} />
+        </label>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-1 block text-small font-semibold">{t('upload.fieldArtistName')}</span>
+            <input required name="author" autoComplete="nickname" className="field" value={formData.author} onChange={set('author')} />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-small font-semibold">{t('upload.categoryLabel')}</span>
+            <select name="category" className="field" value={formData.category} onChange={set('category')}>
               <option value="Individual">{t('upload.categoryIndividual')}</option>
               <option value="Grup">{t('upload.categoryGroup')}</option>
               <option value="Escola de Dansa">{t('upload.categorySchool')}</option>
             </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('upload.locationLabel')}</label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-3 text-gray-400" size={18} />
-              <input
-                required
-                type="text"
-                className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none"
-                placeholder={t('upload.locationPlaceholder')}
-                value={formData.location}
-                onChange={e => setFormData({ ...formData, location: e.target.value })}
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-1">{t('upload.locationHint')}</p>
-          </div>
-          <input required type="url" className="w-full px-4 py-2 border rounded" placeholder={t('upload.linkPlaceholder')} value={formData.url} onChange={e => setFormData({ ...formData, url: e.target.value })} />
+          </label>
+        </div>
 
-          <div className="flex items-start gap-2 pt-2 border-t border-gray-100">
-            <input
-              required
-              type="checkbox"
-              id="imageRights"
-              checked={acceptImageRights}
-              onChange={(e) => setAcceptImageRights(e.target.checked)}
-              className="mt-1 rounded text-rose-600 focus:ring-rose-500"
-            />
-            <label htmlFor="imageRights" className="text-sm text-gray-500">
-              {t('upload.imageRightsPre')}{' '}
-              <button type="button" onClick={() => onNavigate?.('bases')} className="text-rose-600 underline">{t('upload.imageRightsLink')}</button>.
-            </label>
-          </div>
+        <label className="block">
+          <span className="mb-1 block text-small font-semibold">{t('upload.locationLabel')}</span>
+          <input required type="text" name="location" autoComplete="off" className="field" placeholder={t('upload.locationPlaceholder')} value={formData.location} onChange={set('location')} />
+          <span className="mt-1 block text-small text-ink-soft">{t('upload.locationHint')}</span>
+        </label>
 
-          <Button className="w-full" type="submit" disabled={isSubmitting || !acceptImageRights}>{isSubmitting ? t('upload.submitting') : t('upload.submit')}</Button>
-        </form>
-      </Card>
-    </div>
+        <label className="block">
+          <span className="mb-1 block text-small font-semibold">{t('upload.linkLabel')}</span>
+          <input required type="url" name="url" inputMode="url" autoComplete="off" spellCheck={false} className="field" placeholder={t('upload.linkPlaceholder')} value={formData.url} onChange={set('url')} />
+        </label>
+
+        <div className="flex items-start gap-3 pt-2">
+          <input
+            required
+            type="checkbox"
+            id="imageRights"
+            checked={acceptImageRights}
+            onChange={(e) => setAcceptImageRights(e.target.checked)}
+            className="mt-1 h-5 w-5 shrink-0 accent-[var(--color-brand-deep)]"
+          />
+          <label htmlFor="imageRights" className="text-body text-ink-soft">
+            {t('upload.imageRightsPre')}{' '}
+            <button type="button" onClick={() => onNavigate?.('bases')} className="link-text">{t('upload.imageRightsLink')}</button>.
+          </label>
+        </div>
+
+        <Button className="w-full px-8 py-3 text-body sm:w-auto" type="submit" disabled={isSubmitting || !acceptImageRights}>
+          {isSubmitting ? t('upload.submitting') : t('upload.submit')}
+        </Button>
+      </form>
+    </PageShell>
   );
 };
